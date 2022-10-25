@@ -51,7 +51,22 @@ class Othellier(object):
     def nombre_successeurs(self):
         pass
 
+    # Cette méthode retourne les positions où le joueur peut jouer
+    # Entrée : 1 othellier
+    # Sortie : liste de couples positions dans la matrice
+    def positions_successeurs(self):
+        pass
+
+    # Entrée : othellier, position où on joue
+    # Modifie les couleurs de l'othellier selon le coup joué
+    # Sortie : nouvel othellier
+    # On s'en servira pour avancer quand décision prise + quand on veeut faire les simulations
+    # Remplace fonction successeurs()
+    def jouer():
+        pass
+
     # Retourne la LISTE des othelliers successeurs
+    # Ajouter boucle comprehension avec position_successeurs et jouer au début de méthode construction à la place de ça
     def successeurs(self):
         return [Othellier(self.tablier+1),Othellier(self.tablier+2)]
     
@@ -103,7 +118,7 @@ class Arbre(object):
         print(liste_feuilles)
         # On calcule la fonction d'évaluation pour chaque feuille
         for othellier in liste_feuilles:
-        #     self.dico_global[othellier].score = fonction_evaluation(self.dico_global[othellier])
+            self.dico_global[othellier].score = fonction_evaluation(self.dico_global[othellier])
             pass
         
         # On remonte niveau par niveau jusqu'à la racine
