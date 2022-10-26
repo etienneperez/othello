@@ -395,14 +395,14 @@ class MachineVsMachine(object):
         # On enchaine les tours jusqu'à ce qu'on déclenche une fin de partie
         while continuer_jouer:
             
-            if liste_othelliers[-1].successeurs(couleur) == []:
+            if liste_othelliers[-1].successeurs(couleur_tour_i) == []:
                 continuer_jouer = False
             else:
                 # à chaque tour, on construit l'arbre partant du dernier othellier et on applique l'algo donné en paramètre pour déterminer le coup à jouer
                 arbre_tour_i = Arbre(liste_othelliers[-1], profondeur = param_tour_i[0], couleur = couleur_tour_i)
                 arbre_tour_i.construire()
                 if param_tour_i == "min_max":
-                    liste_othelliers.append(arbre.min_max())
+                    liste_othelliers.append(arbre_tour_i.min_max())
             
                 # A chaque fin de tour, on change de joueur
                 if couleur_tour_i == "blanc":
