@@ -6,6 +6,7 @@ from tkinter import *
 import tkinter as tk
 from random import randint, random
 import copy as copy
+from fonction_evaluation import evaluate_corner, hasard
 # from PIL import ImageTk, Image
 
 
@@ -68,6 +69,12 @@ class Othellier(object):
             return "noir"
         else:
             return "egalite"
+    
+    # Retourne True s'il n'y a plus de successeurs possibles
+    def terminal(self,couleur):
+        if self.successeurs(couleur)[1] == []:
+            return True
+        return False
 
     # Cette méthode retourne les positions où le joueur peut jouer et les othelliers successeurs correspondant à chaque coup
     # Entrée : 1 othellier, couleur jouée
@@ -276,6 +283,7 @@ class Arbre(object):
     # Entrées : self. Et nécessite attributs couleur (pour méthode successeur), profondeur.
     # Uttilise la méthode .successeurs() de la classe Othellier qui retourne 2 listes dont la liste de tous les successeurs (objets) d'un othellier donné.
     # Action : stocke dans dico_global tous les othelliers de chaque niveau, et stocke pour chaque othellier la liste des noms de ses successeurs
+    # Problème rencontré : si arbre peut pas construire jusqu'à profondeur demandée parce qu'il rencontre un othellier terminal avant, il doit s'arrêter et maj sa profondeur réelle
     def construire(self):
         
         # On initialiste la liste des othelliers à développer par l'othellier racine (son nom string)
@@ -288,7 +296,10 @@ class Arbre(object):
         else:
             self.couleur = "blanc"
 
-        for prof in range(1,self.profondeur+1):
+        prof = 1
+        existe_othellier_terminal = False
+
+        while (prof <= self.profondeur): # va de 1 à self.profondeur, sauf si rencontre othellier terminal = arrêt
             compteur = 0
             # on modifie la couleur jouée = qui joue à ce niveau
             if self.couleur == "blanc":
@@ -297,10 +308,23 @@ class Arbre(object):
                 self.couleur = "blanc"
 
             # Pour chaque othellier du niveau i (othellier = le nom string)
-            for othellier in liste_prof_i: 
+            for othellier in liste_prof_i:
                 liste_successeurs_locale = []
+
+                # Si 1 othellier n'a pas de successeur, il faut arrêter de construire l'arbre
+                if self.dico_global[othellier].successeurs(self.couleur)[1] == []:
+                    self.profondeur = prof-1 # très important pour que min_max parte bien de la profondeur où on a un othellier terminal
+                    existe_othellier_terminal = True
+                    # A la base je voulais aussi supprimer tous les othelliers successeurs déjà créés pour la profondeur prof
+                    # Mais ça sert à rien car on modifie l'attribut profondeur de l'arbre donc on ira pas chercher dans dico_global des othelliers qui sont à une profondeur plus grande
+
+                    # for clef in self.dico_global.keys():
+                    #     if   clef.split("_")[1] == str(self.profondeur):
+                    #         del self.dico_global[clef]
+                    break
+
                 # pour chaque successeur de l'othellier (au sens objet)
-                for successeur in self.dico_global[othellier].successeurs(self.couleur)[1]: 
+                for successeur in self.dico_global[othellier].successeurs(self.couleur)[1]:
                     compteur += 1
                     self.dico_global["othellier_"+str(prof)+"_"+str(compteur)] = successeur
                     liste_prof_i_plus_1.append("othellier_"+str(prof)+"_"+str(compteur))
@@ -308,8 +332,13 @@ class Arbre(object):
                 
                 self.dico_global[othellier].liste_successeurs = liste_successeurs_locale.copy() # pour chaque othellier, on stocke le NOM de ses successeurs
             
+            if existe_othellier_terminal:
+                break
+
             liste_prof_i = liste_prof_i_plus_1.copy() # nouvelle liste à parcourir pour le niveau suivant
             liste_prof_i_plus_1 = []
+
+            prof += 1
 
     
     def afficher(self):
@@ -321,18 +350,15 @@ class Arbre(object):
     # Méthode qui applique l'algorithme min_max à l'arbre construit
     # Entrée : self, mais utilise : profondeur
     # Sortie : othellier cible = successeur de l'othellier racine à choisir
-    def min_max(self):
+    def min_max(self, fonction_evaluation):
         
         # On construit la listes des noms des othelliers terminaux
         liste_feuilles = [clef for clef in self.dico_global.keys() if clef.split("_")[1] == str(self.profondeur)]
 
         # On calcule la fonction d'évaluation pour chaque feuille
         for othellier in liste_feuilles:
-            #self.dico_global[othellier].score = fonction_evaluation(self.dico_global[othellier])
-            
-            # Pour les tests sans fonction d'évaluation :
-            self.dico_global[othellier].score = 100*random()
-
+            self.dico_global[othellier].score = fonction_evaluation(self.dico_global[othellier],self.couleur)
+    
         # On remonte niveau par niveau depuis les feuilles jusqu'à la racine
         for prof in reversed(range(1,self.profondeur)): # va de profondeur-1 à 1 -->  ne pas mettre 0 car sert à R et comme ça on récupère liste_othelliers_parents après la boucle et on prend le max dedans
             
@@ -345,14 +371,15 @@ class Arbre(object):
             # 1er cas --> on prend le Max
             if prof % 2 == 0 :
                 for othellier_parent in liste_othelliers_parents: # Pour chaque othellier parent, on calcule max(successeurs)
-                    #print([successeur for successeur in self.dico_global[othellier_parent].liste_successeurs])
                     scores_successeurs = [self.dico_global[successeur].score for successeur in self.dico_global[othellier_parent].liste_successeurs] 
                     self.dico_global[othellier_parent].score = max(scores_successeurs)
             
             # 2ème cas --> on prend le Min
-            if prof % 2 != 0:
+            else:
                 for othellier_parent in liste_othelliers_parents: # Pour chaque othellier parent, on calcule max(successeurs)
-                    #print([successeur for successeur in self.dico_global[othellier_parent].liste_successeurs])
+                    # print("clefs :",self.dico_global.keys())
+                    # print("oth parent : ",othellier_parent)
+                    # print("oth parent success : ", self.dico_global[othellier_parent].liste_successeurs)
                     scores_successeurs = [self.dico_global[successeur].score for successeur in self.dico_global[othellier_parent].liste_successeurs] 
                     self.dico_global[othellier_parent].score = min(scores_successeurs)
 
@@ -361,7 +388,7 @@ class Arbre(object):
 
         # On choisit l'othellier cible = 1er coup à jouer par le joueur min ou max
         scores_niveau_1 = [self.dico_global[othellier].score for othellier in liste_othelliers_parents]
-        othellier_cible = liste_othelliers_parents[scores_niveau_1.index(max(scores_niveau_1))]
+        othellier_cible = self.dico_global[liste_othelliers_parents[scores_niveau_1.index(max(scores_niveau_1))]]
 
         # On extrait l'othellier cible à choisir depuis la racine
         return othellier_cible
@@ -384,7 +411,7 @@ class MachineVsMachine(object):
     
     # Méthode d'instance qui réalise les tours de la partie
     # Entrée : param_noir, param_blanc
-    # Action : elle met en attribut de l'instance la liste des othelliers + le gagnant
+    # Action : elle met en attribut de l'instance la liste des othelliers successifs de la partie + le joueur gagnant
     def jouer(self):
 
         continuer_jouer = True
@@ -395,14 +422,19 @@ class MachineVsMachine(object):
         # On enchaine les tours jusqu'à ce qu'on déclenche une fin de partie
         while continuer_jouer:
             
-            if liste_othelliers[-1].successeurs(couleur_tour_i) == []:
+            print("taille liste : ",len(liste_othelliers))
+            print(" joueur : ", couleur_tour_i)
+            liste_othelliers[-1].afficher()
+
+            if liste_othelliers[-1].successeurs(couleur_tour_i)[1] == []:
                 continuer_jouer = False
+
             else:
                 # à chaque tour, on construit l'arbre partant du dernier othellier et on applique l'algo donné en paramètre pour déterminer le coup à jouer
                 arbre_tour_i = Arbre(liste_othelliers[-1], profondeur = param_tour_i[0], couleur = couleur_tour_i)
                 arbre_tour_i.construire()
-                if param_tour_i == "min_max":
-                    liste_othelliers.append(arbre_tour_i.min_max())
+
+                liste_othelliers.append(arbre_tour_i.min_max(param_tour_i[1]))
             
                 # A chaque fin de tour, on change de joueur
                 if couleur_tour_i == "blanc":
@@ -411,10 +443,8 @@ class MachineVsMachine(object):
                 else:
                     couleur_tour_i = "blanc"
                     param_tour_i = self.param_blanc
-            
-
-
-        # Fin partie
+        
+        # Quand partie finie, on regarde qui gagne sur le dernier othellier.
         if self.liste_othelliers[-1].gagnant() == "blanc":
             self.gagnant = "blanc"
         else:
@@ -424,16 +454,18 @@ class MachineVsMachine(object):
 
 
 
+# Initialisation d'un othellier
+tablier_0 = np.array([[Case("vide") for i in range (8)] for j in range (8)])
+tablier_0[3,3] = Case("blanc")
+tablier_0[4,4] = Case("blanc")
+tablier_0[3,4] = Case("noir")
+tablier_0[4,3] = Case("noir")
+othellier_0 = Othellier(tablier_0)
+print("othellier départ :")
+othellier_0.afficher()
 
-# # Initialisation d'un othellier
-# tablier_0 = np.array([[Case("vide") for i in range (8)] for j in range (8)])
-# tablier_0[3,3] = Case("blanc")
-# tablier_0[4,4] = Case("blanc")
-# tablier_0[3,4] = Case("noir")
-# tablier_0[4,3] = Case("noir")
-# othellier_0 = Othellier(tablier_0)
-# print("othellier départ :")
-# othellier_0.afficher()
+
+
 
 # # Tests fonction successeurs()
 # print(othellier_0.successeurs("blanc")[0]) # on a bien la liste des positions accessibles
@@ -447,13 +479,20 @@ class MachineVsMachine(object):
 # print(arbre.dico_global.keys())
 
 # # Test min/max
-# othellier_cible = arbre.min_max()
+# othellier_cible = arbre.min_max(hasard)
 # print(othellier_cible, " : ")
 # arbre.dico_global[othellier_cible].afficher()
 
+# Test de lancement de plusieurs parties
+# Idée du test = on fait faire l'algo min max à Blanc avec la fonc d'éval evaluate_corner
+# et Noir joue au hasard --> on regarde si blanc gagne plus ou pas.
+nb_partie = 10
+param_blanc_0 = [3, evaluate_corner] # profondeur et fonction d'évaluation utilisée
+param_noir_0 = [3, hasard]
 
-
-
+partie_0 = MachineVsMachine(othellier_0, param_blanc = param_blanc_0, param_noir = param_noir_0)
+partie_0.jouer()
+print(partie_0.gagnant)
 
 
 
