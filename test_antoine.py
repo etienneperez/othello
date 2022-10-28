@@ -10,12 +10,14 @@ import copy as copy
 
 class Othellier(object):
 
-    def __init__(self, prof,joueur,tablier):#,score = 0 ):
+    def __init__(self, prof,joueur,tablier,passe = FALSE):#,score = 0 ):
         self.prof = prof #profondeur restante à explorer
         self.joueur = joueur # 1 ou -1
         self.tablier = tablier # matrice 8x8 remplie de 1, de -1 et de 0 (cases vides)
+        self.precedent_passe = passe
         self.liste_successeurs = [] # liste d'instances Othelliers qui sont les successeurs potentiels de cet Othellier
         self.liste_coord_successeurs = [] # liste des coordonnées de la case jouée pour chacun des successeurs
+        self.gagnant = 0
         self.successeurs_bis() # lance la méthode successeurs qui remplie les listes successeurs. 
                                 # Cette méthode est donc automatiquement appelée lorsqu'un othellier est crée. 
         #self.successeurs() #idem avec l'autre version de la méthode successeurs
@@ -203,6 +205,10 @@ class Othellier(object):
                             # Et si il en a, ses successeurs vont eux même appelé cette méthode et ainsi de suite jusqu'à la profondeur max ou jusqu'à atteindre des othelliers terminaux (gagnant ou perdant) 
                             self.liste_successeurs.append(Othellier(self.prof-1,-self.joueur,tablier_local))
                         #Si la case n'était pas accessible/jouable, rien n'est ajouté aux listes successeurs
+            if self.liste_successeurs == [] and not self.precedent_passe : 
+                self.liste_successeurs = [Othellier(self.prof-1,-self.joueur,self.tablier,TRUE)]
+            if self.liste_successeurs == [] and self.precedent_passe : 
+                self.isGagnant()
         else : 
             #Si on a atteint la profondeur max, on l'indique. Il ne faut pas rien faire 
             # car sinon ça donnerai une liste vide dans les listes successeurs et on serait incapable de différencier ce cas du cas où l'on n'a pas toruvé de successeur.
@@ -420,25 +426,23 @@ class Othellier(object):
     #Méthode disant si il est encore possible de jouer sur cet othellier pour le joueur concerné. 
     #Si oui, elle renvoit 0
     #Sinon, elle compte les pions et renvoie celui qui a le plus de jeton sur l'othellier (2 si égalité)
-    def gagnant(self):
-        if self.liste_successeurs == []:
-            nb_blanc = 0
-            nb_noir = 0
-            for ligne in self.tablier:
-                for case in ligne:
-                    if case == 1:
-                        nb_blanc += 1
-                    if case == -1:
-                        nb_noir += 1
-        
-            if nb_blanc > nb_noir:
-                return 1
-            elif nb_blanc < nb_noir:
-                return -1
-            else:
-                return 2
-        else : 
-            return 0
+    def isGagnant(self):
+        nb_blanc = 0
+        nb_noir = 0
+        for ligne in self.tablier:
+            for case in ligne:
+                if case == 1:
+                    nb_blanc += 1
+                if case == -1:
+                    nb_noir += 1
+    
+        if nb_blanc > nb_noir:
+            self.gagnant = 1
+        elif nb_blanc < nb_noir:
+            self.gagnant =  -1
+        else:
+            self.gagnant =  2
+
 
 
 ##########Fonction MinMax#################
@@ -450,14 +454,15 @@ def MinMax(othellier,prof,joueur,isMaximizing):
     #Conditions d'arrêts et scores à remonter 
 
     #Si l'othellier est gagnant, on remonte un valeur très élevé 1000
-    if othellier.gagnant() == joueur : 
+    if othellier.gagnant == joueur : 
         return 1000
     #Si il est perdant, on remonte une valeur très faible -1000
-    if othellier.gagnant() == -joueur : 
+    if othellier.gagnant == -joueur : 
         return -1000
     #Si l'othellier n'est pas terminal, et que l'on a atteint la profondeur max: 
     # on s'arrête et on utilise la fonction d'evaluation pour connaitre le score à remonter
     if (prof == 0) : 
+        #return(randint(10,100))
         return (othellier.evaluate())
 
     #Tant que l'on est dans aucun de ces cas : 
@@ -485,7 +490,6 @@ def MinMax(othellier,prof,joueur,isMaximizing):
         return bestscore
 
 
-
 ###################Fonction de choix du prochain move de l'ordi########################
 #Prend en entrée un othellier, la profondeur max d'exploration et le joueur qui joue 
 #En sortie : le tablier resultant du move qu'il a fait
@@ -495,9 +499,9 @@ def compMove(othellier,prof,joueur):
     bestScore = -10000
     #On initialise le tablier de sortie comme on veut
     bestMove = np.array([[0 for i in range (8)] for j in range (8)])
-
     #On va parcourir les successeurs de l'othellier actuel
     #C'est un de ces successeurs que l'on va choisir, il faut donc les évaluer
+    ppasse = FALSE
     for i in range(len(othellier.liste_successeurs)) : 
         sons = othellier.liste_successeurs[i]
 
@@ -505,13 +509,15 @@ def compMove(othellier,prof,joueur):
         #On est donc un étage plus bas sur l'arbre que l'othellier initial (d'où prof-1)
         #On est sur un étage Max, le prochain sera donc un étage Min (d'où le -joueur et False)
         score = MinMax(sons,prof-1,-joueur,False)
+        #score = alphabeta(sons,prof-1,-joueur,False)
 
         #Ici, on cherche à maximiser le score du joueur, donc si le score dépasse le score max jusqu'à là :  
         # On change le best score et on retient le tablier du successeurs qui a ce nouveau score max
         if score > bestScore : 
             bestScore = score
             bestMove = othellier.liste_successeurs[i].tablier
-    return bestMove
+            ppasse = othellier.liste_successeurs[i].precedent_passe
+    return Othellier(prof,-joueur,bestMove,ppasse)
 
 
 #####################Fonction globale de jeu###########################
@@ -533,30 +539,37 @@ def game(prof):
     #initialisations
     i = 0 #compteur de tour
     joueur = othellier_0.joueur #A qui le tour ? 
-    passe = 0 #compte le nombre de tours passés successifs
+    #passe = 0 #compte le nombre de tours passés successifs
     #Boucle de jeu
-    while passe<2 : #si les deux joueurs passent successivement, c'est qu'on ne peut plus jouer, on arrête
-        print(joueur)
+    #while passe<2 : #si les deux joueurs passent successivement, c'est qu'on ne peut plus jouer, on arrête
+    #    print(joueur)
+    #    print(liste_othellier_partie[i].tablier)
+    #    if liste_othellier_partie[i].gagnant() == 0 : #Si il peut jouer
+    #        print('joue')
+    #        #Il joue : création de l'othellier suivant en récuperant la grille après que le joueur ait joué par la fonction compMove
+    #        #On change bien le joueur dans le nouvel othellier crée (-joueur)
+    #        liste_othellier_partie.append(Othellier(prof,-joueur,compMove(liste_othellier_partie[i],prof,joueur))) 
+    #        #On n'a pas passé, passe revient à 0
+    #        passe = 0
+    #    else : #On ne peut pas jouer
+    #        print('passe')
+    #        passe += 1 #On compte que l'on a passé
+    #        liste_othellier_partie.append(Othellier(prof,-joueur,liste_othellier_partie[i].tablier)) #On ajoutte le même othellier mais avec pour joueur l'autre joueur
+    #    joueur = -joueur #changement de joueur
+    #    i += 1
+    while liste_othellier_partie[i].gagnant == 0 : #si les deux joueurs passent successivement, c'est qu'on ne peut plus jouer, on arrête
+        #print(joueur)
         print(liste_othellier_partie[i].tablier)
-        if liste_othellier_partie[i].gagnant() == 0 : #Si il peut jouer
-            print('joue')
-            #Il joue : création de l'othellier suivant en récuperant la grille après que le joueur ait joué par la fonction compMove
-            #On change bien le joueur dans le nouvel othellier crée (-joueur)
-            liste_othellier_partie.append(Othellier(prof,-joueur,compMove(liste_othellier_partie[i],prof,joueur))) 
-            #On n'a pas passé, passe revient à 0
-            passe = 0
-        else : #On ne peut pas jouer
-            print('passe')
-            passe += 1 #On compte que l'on a passé
-            liste_othellier_partie.append(Othellier(prof,-joueur,liste_othellier_partie[i].tablier)) #On ajoutte le même othellier mais avec pour joueur l'autre joueur
+        liste_othellier_partie.append(compMove(liste_othellier_partie[i],prof,joueur))
         joueur = -joueur #changement de joueur
         i += 1
+    
     print(liste_othellier_partie[i].tablier)
     print('Victoire :')
-    print(liste_othellier_partie[i].gagnant())
+    print(liste_othellier_partie[i].gagnant)
 
 ####Test######
-game(3)
+game(2)
 #tablier_0 = np.array([[0 for i in range (8)] for j in range (8)])
 #tablier_0[3,3] = 1
 #tablier_0[4,4] = 1
