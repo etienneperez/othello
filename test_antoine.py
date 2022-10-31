@@ -215,186 +215,6 @@ class Othellier(object):
             self.liste_coord_successeurs = ['profmax']
             self.liste_successeurs = ['profmax']
                        
-
-    #fait comme successeurs_bis mais d'une manière un peu différente
-    def successeurs(self):
-        # On parcourt toutes les cases de l'othellier
-        if self.prof > 0 :     
-            i = 0        
-            for ligne in self.tablier:       
-                j = 0
-                for case in ligne:
-                    # Dès qu'on trouve une case vide, on teste si elle est accessible par la couleur
-                    if case == 0:
-                        # On crée un othellier identique à l'othellier considéré
-                        # à la différence qu'on joue couleur à la position (i,j)
-                        tablier_local = np.array([[0 for i in range (8)] for j in range (8)])
-                        num_ligne = 0
-                        for ligne_tablier_local in tablier_local:
-                            num_col = 0
-                            for case_tablier_local in ligne_tablier_local:
-                                tablier_local[num_ligne,num_col] = self.tablier[num_ligne,num_col]
-                                num_col +=1
-                            num_ligne += 1
-                        tablier_local[i,j] = self.joueur
-                        othellier_local = Othellier(self.prof-1,-self.joueur,tablier_local)
-                        #othellier_local.tablier[i,j] = self.joueur
-
-                    # Juste ce qu'il y a en dessous ne marchait pas car quand on modifie oth_local ça modifier self.tablier ensuite
-                    # othellier_local = Othellier(self.tablier)
-                    # othellier_local.tablier[i,j].couleur = couleur
-                    
-                    # On va parcourir dans toutes les directions pour voir si il y a des jetons adverses transformables
-                    # Si c'est le cas sur au moins 1 ligne ou diagonale --> (i,j) est accessible et on peut ajouter l'othellier construit à la liste des successeurs
-                        taille_tablier = 8
-                        k = 1 # compteur d'écartement à la position (i,j)
-                        continuer_bas, continuer_haut, continuer_droite, continuer_gauche, continuer = True, True, True, True, True
-                        continuer_diag_hd, continuer_diag_hg, continuer_diag_bd, continuer_diag_bg = True, True, True, True
-                        accessible = False
-
-                    # On parcourt tant que c'est encore possible de trouver une solution --> continuer = True
-                        while continuer:
-                        # Droite
-                            if ((j+k) < taille_tablier) and continuer_droite:
-                            # Dès qu'on tombe sur la même couleur on convertit tous ceux entre les 2 en la couleur et on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i,j+k] == self.joueur:
-                                    continuer_droite = False
-                                    for l in range(1,k):
-                                        othellier_local.tablier[i,j+l] = self.joueur
-                                # Si on tombe sur couleur avec k>1 --> cela signifie que le case est accessible
-                                    if k > 1:
-                                        accessible = True
-                            # Si on tombe sur une case vide, on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i,j+k] == 0 :
-                                    continuer_droite = False
-                            else:
-                                continuer_droite = False
-
-                        # Gauche
-                            if ((j-k) >= 0) and continuer_gauche:
-                            # Dès qu'on tombe sur la même couleur on convertit tous ceux entre les 2 en la couleur et on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i,j-k] == self.joueur:
-                                    continuer_gauche = False
-                                    for l in range(1,k):
-                                        othellier_local.tablier[i,j-l] = self.joueur
-                                # Si on tombe sur couleur avec k>1 --> cela signifie que le case est accessible
-                                    if k > 1:
-                                        accessible = True
-                            # Si on tombe sur une case vide, on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i,j-k] == 0 :
-                                    continuer_gauche = False
-                            else:
-                                continuer_gauche = False
-
-                        # Bas
-                            if ((i+k) < taille_tablier) and continuer_bas:
-                            # Dès qu'on tombe sur la même couleur on convertit tous ceux entre les 2 en la couleur et on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i+k,j] == self.joueur:
-                                    continuer_bas = False
-                                    for l in range(1,k):
-                                        othellier_local.tablier[i+l,j] = self.joueur
-                                # Si on tombe sur couleur avec k>1 --> cela signifie que le case est accessible
-                                    if k > 1:
-                                        accessible = True
-                            # Si on tombe sur une case vide, on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i+k,j] == 0 :
-                                    continuer_bas = False
-                            else:
-                                continuer_bas = False
-
-                        # Haut
-                            if ((i-k) >= 0) and continuer_haut:
-                            # Dès qu'on tombe sur la même couleur on convertit tous ceux entre les 2 en la couleur et on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i-k,j] == self.joueur:
-                                    continuer_haut = False
-                                    for l in range(1,k):
-                                        othellier_local.tablier[i-l,j] = self.joueur
-                                # Si on tombe sur couleur avec k>1 --> cela signifie que le case est accessible
-                                    if k > 1:
-                                        accessible = True
-                            # Si on tombe sur une case vide, on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i-k,j] == 0 :
-                                    continuer_haut = False
-                            else:
-                                continuer_haut = False
-                        
-                        # Diagonale Haut-Droite
-                            if ((i-k) >= 0) and ((j+k) < taille_tablier) and continuer_diag_hd:
-                            # Dès qu'on tombe sur la même couleur on convertit tous ceux entre les 2 en la couleur et on arrête de chercher dans ce sens
-                            
-                                if othellier_local.tablier[i-k,j+k] == self.joueur:
-                                    continuer_diag_hd = False
-                                    for l in range(1,k):
-                                        othellier_local.tablier[i-l,j+l] = self.joueur
-                                # Si on tombe sur couleur avec k>1 --> cela signifie que le case est accessible
-                                    if k > 1:
-                                        accessible = True
-                            # Si on tombe sur une case vide, on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i-k,j+k] == 0 :
-                                    continuer_diag_hd = False
-                            else:
-                                continuer_diag_hd = False
-                        
-                        # Diagonale Haut-Gauche
-                            if ((i-k) >= 0) and ((j-k) >= 0) and continuer_diag_hg:
-                            # Dès qu'on tombe sur la même couleur on convertit tous ceux entre les 2 en la couleur et on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i-k,j-k] == self.joueur:
-                                    continuer_diag_hg = False
-                                    for l in range(1,k):
-                                        othellier_local.tablier[i-l,j-l] = self.joueur
-                                # Si on tombe sur couleur avec k>1 --> cela signifie que le case est accessible
-                                    if k > 1:
-                                        accessible = True
-                            # Si on tombe sur une case vide, on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i-k,j-k] == 0 :
-                                    continuer_diag_hg = False
-                            else:
-                                continuer_diag_hg = False
-                        
-                        # Diagonale Bas-Gauche
-                            if ((i+k) < taille_tablier) and ((j-k) >= 0) and continuer_diag_bg:
-                            # Dès qu'on tombe sur la même couleur on convertit tous ceux entre les 2 en la couleur et on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i+k,j-k] == self.joueur:
-                                    continuer_diag_bg = False
-                                    for l in range(1,k):
-                                        othellier_local.tablier[i+l,j-l] = self.joueur
-                                # Si on tombe sur couleur avec k>1 --> cela signifie que le case est accessible
-                                    if k > 1:
-                                        accessible = True
-                            # Si on tombe sur une case vide, on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i+k,j-k] == 0 :
-                                    continuer_diag_bg = False
-                            else:
-                                continuer_diag_bg = False
-                        
-                        # Diagonale Bas-Droite
-                            if ((i+k) < taille_tablier) and ((j+k) < taille_tablier) and continuer_diag_bd:
-                            # Dès qu'on tombe sur la même couleur on convertit tous ceux entre les 2 en la couleur et on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i+k,j+k] == self.joueur:
-                                    continuer_diag_bd = False
-                                    for l in range(1,k):
-                                        othellier_local.tablier[i+l,j+l] = self.joueur
-                                # Si on tombe sur couleur avec k>1 --> cela signifie que le case est accessible
-                                    if k > 1:
-                                        accessible = True
-                            # Si on tombe sur une case vide, on arrête de chercher dans ce sens
-                                if othellier_local.tablier[i+k,j+k] == 0 :
-                                    continuer_diag_bd = False
-                            else:
-                                continuer_diag_bd = False
-                        
-
-                        # Si on peut encore explore dans au moins l'une des directions, on continue
-                            continuer = continuer_bas or continuer_haut or continuer_droite or continuer_gauche or continuer_diag_hd or continuer_diag_hg or continuer_diag_bg or continuer_diag_bd
-                            k += 1
-                    
-                    # Si dans au moins l'une des directions on a pu transformer des pions adverses --> on stocke (i,j) et l'othellier obtenu
-                        if accessible:
-                            self.liste_coord_successeurs.append([i,j])
-                            self.liste_successeurs.append(othellier_local)
-
-                    j += 1
-                i +=1
     #fonction d'évaluation
     #En sortie : le score d'évaluation de cet othellier
     #Pour l'instant elle est basé uniquement sur l'occupation des coins. 
@@ -452,7 +272,6 @@ class Othellier(object):
 def MinMax(othellier,prof,joueur,isMaximizing):
 
     #Conditions d'arrêts et scores à remonter 
-
     #Si l'othellier est gagnant, on remonte un valeur très élevé 1000
     if othellier.gagnant == joueur : 
         return 1000
@@ -495,6 +314,8 @@ def MinMax(othellier,prof,joueur,isMaximizing):
 #En sortie : le tablier resultant du move qu'il a fait
 def compMove(othellier,prof,joueur):
 
+    if len(othellier.liste_successeurs) == 1:
+        return Othellier (prof,-joueur,othellier.liste_successeurs[0].tablier,othellier.liste_successeurs[0].precedent_passe)
     #On initialise le score max à une valeur très basse
     bestScore = -10000
     #On initialise le tablier de sortie comme on veut
@@ -509,14 +330,16 @@ def compMove(othellier,prof,joueur):
         #On est donc un étage plus bas sur l'arbre que l'othellier initial (d'où prof-1)
         #On est sur un étage Max, le prochain sera donc un étage Min (d'où le -joueur et False)
         score = MinMax(sons,prof-1,-joueur,False)
-        #score = alphabeta(sons,prof-1,-joueur,False)
 
         #Ici, on cherche à maximiser le score du joueur, donc si le score dépasse le score max jusqu'à là :  
         # On change le best score et on retient le tablier du successeurs qui a ce nouveau score max
         if score > bestScore : 
             bestScore = score
+            #bestMove = sons
             bestMove = othellier.liste_successeurs[i].tablier
             ppasse = othellier.liste_successeurs[i].precedent_passe
+    #bestMove.prof = prof
+    #return bestMove
     return Othellier(prof,-joueur,bestMove,ppasse)
 
 
@@ -525,7 +348,6 @@ def compMove(othellier,prof,joueur):
 def game(prof): 
 
     #Création de l'othellier initial
-
     tablier_0 = np.array([[0 for i in range (8)] for j in range (8)])
     tablier_0[3,3] = 1
     tablier_0[4,4] = 1
@@ -533,30 +355,11 @@ def game(prof):
     tablier_0[4,3] = -1
     #On commence par le joueur 1, c'est arbitraire
     othellier_0 = Othellier(prof,1,tablier_0)
-
     #Initialisation de liste retenant les othelliers joués (peut-être un peu lourd de tous les retenir, en soit il suffit d'en retenir un seul donc on pourra changer)
     liste_othellier_partie = [othellier_0]
     #initialisations
     i = 0 #compteur de tour
     joueur = othellier_0.joueur #A qui le tour ? 
-    #passe = 0 #compte le nombre de tours passés successifs
-    #Boucle de jeu
-    #while passe<2 : #si les deux joueurs passent successivement, c'est qu'on ne peut plus jouer, on arrête
-    #    print(joueur)
-    #    print(liste_othellier_partie[i].tablier)
-    #    if liste_othellier_partie[i].gagnant() == 0 : #Si il peut jouer
-    #        print('joue')
-    #        #Il joue : création de l'othellier suivant en récuperant la grille après que le joueur ait joué par la fonction compMove
-    #        #On change bien le joueur dans le nouvel othellier crée (-joueur)
-    #        liste_othellier_partie.append(Othellier(prof,-joueur,compMove(liste_othellier_partie[i],prof,joueur))) 
-    #        #On n'a pas passé, passe revient à 0
-    #        passe = 0
-    #    else : #On ne peut pas jouer
-    #        print('passe')
-    #        passe += 1 #On compte que l'on a passé
-    #        liste_othellier_partie.append(Othellier(prof,-joueur,liste_othellier_partie[i].tablier)) #On ajoutte le même othellier mais avec pour joueur l'autre joueur
-    #    joueur = -joueur #changement de joueur
-    #    i += 1
     while liste_othellier_partie[i].gagnant == 0 : #si les deux joueurs passent successivement, c'est qu'on ne peut plus jouer, on arrête
         #print(joueur)
         print(liste_othellier_partie[i].tablier)
@@ -569,18 +372,4 @@ def game(prof):
     print(liste_othellier_partie[i].gagnant)
 
 ####Test######
-game(2)
-#tablier_0 = np.array([[0 for i in range (8)] for j in range (8)])
-#tablier_0[3,3] = 1
-#tablier_0[4,4] = 1
-#tablier_0[3,4] = 1
-#tablier_0[4,3] = -1
-#tablier_0[2,4] = 1
-#tablier_0[2,3] = 0
-#othellier_test = Othellier(3,1,tablier_0)
-#print(othellier_test.tablier)
-#for o in othellier_test.liste_successeurs :
-#    print (o.tablier)
-#    print(o.liste_successeurs) 
-#    for i in o.liste_successeurs :
-#        print (i.tablier)
+game(3)
