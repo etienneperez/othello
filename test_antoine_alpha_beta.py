@@ -23,6 +23,24 @@ class Othellier(object):
         #self.successeurs() #idem avec l'autre version de la méthode successeurs
         self.score = 0 # utile dans alpha-beta pour retrouver quel othellier a telle valeur d'alpha
 
+
+    # Méthode pour afficher un othellier.
+    def afficher(self,canvas,long):
+        canvas.delete("ALL")
+        couleur = ""
+        for i in range(8):
+            for j in range(8):
+                if self.tablier[i,j] == 1:
+                    couleur = "white"
+                elif self.tablier[i,j] == -1:
+                    couleur = "black"
+                else:
+                    couleur = "grey"
+                canvas.create_rectangle(10+i*long, 10+j*long, 10+(i+1)*long, 10+(j+1)*long, fill = couleur)
+                j += 1
+            i += 1
+
+
     # Méthode successeurs : 
     # Obj : Trouver et créer les othelliers successeurs potentiels pour un othellier donné. 
     # Pas d'entrée, les attributs de classes suffisent. En sortie, il modifie juste les attributs liste_successeurs et liste_coord_successeurs
@@ -278,8 +296,6 @@ class Othellier(object):
 #La recursion alterne entre des étages min et des étages max
 def MinMax(othellier,prof,joueur,isMaximizing):
     #Conditions d'arrêts et scores à remonter 
-    if othellier.precedent_passe == True and othellier.liste_successeurs == []:
-        return 1000
     #Si l'othellier est gagnant, on remonte un valeur très élevé 1000
     if othellier.gagnant == joueur : 
         return 1000
@@ -322,10 +338,6 @@ def MinMax(othellier,prof,joueur,isMaximizing):
 #La recursion alterne entre des étages min et des étages max
 def AlphaBeta(othellier,prof,joueur,alpha,beta,isMaximizing):
 
-    # Si la partie se finit (2 joueurs sans successeurs d'affillée)
-    if othellier.precedent_passe == True and othellier.liste_successeurs == []:
-        othellier.score = 1000
-        return 1000
     #Si l'othellier est gagnant, on remonte un valeur très élevé 1000
     if othellier.gagnant == joueur :
         othellier.score = 1000
@@ -368,7 +380,6 @@ def compMoveAlphaBeta(othellier,prof,joueur):
     # Pour gérer le cas où il n'y a qu'1 seul successeur possible on le joue direct
     # Gère aussi le cas où celui d'avant a precedent_passe = True --> la partie va se finir car il a gagnant = 1 ou -1
     if len(othellier.liste_successeurs) == 1:
-
         return Othellier (prof,-joueur,othellier.liste_successeurs[0].tablier,othellier.liste_successeurs[0].precedent_passe)
 
     # Pour gérer le cas où prof = 1 --> on retourne juste le max des successeurs
@@ -420,6 +431,11 @@ def compMoveAlphaBeta(othellier,prof,joueur):
 #Prend en entrée un othellier, la profondeur max d'exploration et le joueur qui joue 
 #En sortie : le tablier resultant du move qu'il a fait
 def compMove(othellier,prof,joueur):
+
+    # Pour gérer le cas où il n'y a qu'1 seul successeur possible on le joue direct
+    # Gère aussi le cas où celui d'avant a precedent_passe = True --> la partie va se finir car il a gagnant = 1 ou -1
+    if len(othellier.liste_successeurs) == 1:
+        return Othellier (prof,-joueur,othellier.liste_successeurs[0].tablier,othellier.liste_successeurs[0].precedent_passe)
 
     #On initialise le score max à une valeur très basse
     bestScore = -10000
@@ -478,3 +494,27 @@ def game(prof):
 
 ####Test######
 game(3)
+
+
+
+### Test affichage ####
+# tablier_0 = np.array([[0 for i in range (8)] for j in range (8)])
+# tablier_0[3,3] = 1
+# tablier_0[4,4] = 1
+# tablier_0[3,4] = -1
+# tablier_0[4,3] = -1
+# #On commence par le joueur 1, c'est arbitraire
+# othellier_0 = Othellier(3,1,tablier_0)
+
+# long = 70 # taille d'1 carreau de l'othellier
+
+# fenetre = tk.Tk()
+# fenetre.configure(height = 10*long, width = 10*long) # On laisse une marge de 3*long autour du tablier
+
+# canvas = tk.Canvas(fenetre, width=10*long, height=10*long, background='white')
+
+
+# othellier_0.afficher(canvas,long)
+
+# canvas.pack()
+# fenetre.mainloop()
