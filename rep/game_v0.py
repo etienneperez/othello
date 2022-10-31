@@ -491,8 +491,8 @@ class Joueur(object):
         #On initialise le tablier de sortie comme on veut
         bestMove = np.array([[0 for i in range (8)] for j in range (8)])
 
-        for T in range(3): # on fait T fois le processus de MCTS
-            fct.MCTS(othellier, self.prof, 2, T)
+        for T in range(self.MCTS_T): # on fait T fois le processus de MCTS
+            fct.MCTS(othellier, self.prof, self.MCTS_C, T) #ajouter en paramétre N, nombre de simulations, MCTS_N
         
         ppasse = FALSE
         #On va parcourir les successeurs de l'othellier actuel
