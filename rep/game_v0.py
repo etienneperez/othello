@@ -290,7 +290,7 @@ class Othellier(object):
   
 class Partie(object):
 
-    def __init__(self,Display = True,list_IAtype = ['MinMax','MinMax'], list_prof = [3,3], list_nb_simul_MCTS = [50,50]):
+    def __init__(self,Display = True,list_IAtype = ['MinMax','MinMax'], list_prof = [3,3], list_MCTS_N = [50,50],list_MCTS_T = [3,3],list_MCTS_C = [2,2]):
         self.liste_othellier = [] #liste des othelliers jouées
         self.tour_nb = 0 #à quel tour est-on
         self.joueurs = ["Joueurs : "] #liste de deux instances joueurs
@@ -301,10 +301,14 @@ class Partie(object):
         #Ce sont des listes de tailles deux : un élément pour chaque joueur
         self.list_IAtype = list_IAtype #Type de l'IA Minmax, AlphaBeta, MCTS
         self.list_prof = list_prof #Prof
-        self.list_nb_simul_MCTS = list_nb_simul_MCTS #Nombre de simulations pour le MCTS
+        self.list_MCTS_N = list_MCTS_N  #Nombre de simulations pour le MCTS
+        self.list_MCTS_T = list_MCTS_T  #Nombre de simulations pour le T de l'algo MCTS
+        self.list_MCTS_C = list_MCTS_C  #Nombre de simulations pour le S de l'algo MCTS
 
-        self.init_othellier() #initialisation de l'othellier 
+        self.result = 0 #Résultat de la partie 
+        self.player1prof = list_prof[0] #prof max du joueur 1, nécessaire pour la création de l'othellier initial
         self.ask_define_player() #création des deux joueurs
+        self.init_othellier() #initialisation de l'othellier 
         if self.Display : #si on a un affichage
             self.init_display() #Initialisation de l'affichage
             self.game() #Jeu
@@ -323,7 +327,7 @@ class Partie(object):
         tablier_0[4,3] = -1
         #On commence par le joueur 1, c'est arbitraire
         #Initialisation de liste retenant les othelliers joués (peut-être un peu lourd de tous les retenir, en soit il suffit d'en retenir un seul donc on pourra changer)
-        self.liste_othellier = [Othellier(prof,1,tablier_0)]
+        self.liste_othellier = [Othellier(self.player1prof,1,tablier_0)]
 
     def ask_define_player(self): 
         if self.Display : 
@@ -331,13 +335,14 @@ class Partie(object):
         #Demande à l'utilisateur de rentrer le type de joueurs qu'il veut voir s'affronter 
         #Possibilités : utilisateur ou IA
         #Si IA : MCTS, MinMax ou AlphaBeta et indiquer la profondeur d'exploration
-        #self.joueurs.append(joueur1) sachant que joueur1 = Joueur(1,True/False,IAtype,prof,nb_simul_MCTS)
-        #self.joueurs.append(joueur2) sachant que joueur2 = Joueur(-1,True/False,IAtype,prof,nb_simul_MCTS)
+        #self.joueurs.append(joueur1) sachant que joueur1 = Joueur(1,True/False,IAtype,prof,prof_adv,nb_simul_MCTS)
+        #self.joueurs.append(joueur2) sachant que joueur2 = Joueur(-1,True/False,IAtype,prof,prof_adv,nb_simul_MCTS)
+        # + il faut modifier self.player1 prof pour pouvoir créer l'othellier initial
 
         #Si il n'y a pas d'affichage, les informations sur les deux joueurs sont directement dans la création de l'instance partie grace aux attribut list_IAtype, list_prof et list_nb_simul_MCTS
         else : 
-            self.joueurs.append(Joueur(1,True,self.list_IAtype[0],self.list_prof[0],self.list_nb_simul_MCTS[0]))
-            self.joueurs.append(Joueur(-1,True,self.list_IAtype[1],self.list_prof[1],self.list_nb_simul_MCTS[1]))
+            self.joueurs.append(Joueur(1,True,self.list_IAtype[0],self.list_prof[0],self.list_prof[1],self.list_MCTS_N[0],self.list_MCTS_T[0],self.list_MCTS_C[0]))
+            self.joueurs.append(Joueur(-1,True,self.list_IAtype[1],self.list_prof[1],self.list_prof[0],self.list_MCTS_N[1],self.list_MCTS_T[1],self.list_MCTS_C[1]))
 
     
     def init_display(self):
@@ -357,37 +362,40 @@ class Partie(object):
     def game(self): 
         #boucle de jeu 
         while self.liste_othellier[-1].gagnant == 0 : #Si l'othellier est gagnant on s'arrête
-
-            self.liste_othellier.append(self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1],self.tour_nb))
+            self.liste_othellier.append(self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1]))
             if self.Display : 
                 self.change_display()
+            print(self.liste_othellier[-1].tablier)
             self.tour_joueur = - self.tour_joueur #changement de joueur
             self.tour_nb += 1
         #Si on est en mode sans affichage, on veut juste retourner le joueur gagnant
-        if not self.Display : 
-            return self.liste_othellier[-1].gagnant
+        self.result = self.liste_othellier[-1].gagnant
 
 
 
 class Joueur(object):
 
-    def __init__(self,nb_joueur = 1,IA = True,IAtype = 'MinMax', prof = 3,nb_simul_MCTS = 50):
+    def __init__(self,nb_joueur = 1,IA = True,IAtype = 'MinMax', prof = 1,prof_adv = 1,MCTS_N =50,MCTS_T = 3,MCTS_C = 2):
         self.nb_joueur = nb_joueur #Joueur 1 ou joueur -1
         self.IA = IA #Boléen pour savoir si c'est un joueur IA (true) ou un vrai joueur (false)
         self.IAtype = IAtype #Si c'est un IA, quel type d'IA : MinMax, AlphaBeta, MCTS (MinMax par défaut)
         self.prof = prof #Si c'est un IA, la profondeur d'exploration (3 par défaut)
-        self.nb_simul_MCTS = nb_simul_MCTS #Si c'est un IA MCTS, le nombre de simulation (50 par défaut)
+        self.prof_adv = prof_adv
+        self.MCTS_N = MCTS_N #Si c'est un IA MCTS, le nombre de simulation (50 par défaut)
+        self.MCTS_T = MCTS_T
+        self.MCTS_C = MCTS_C
+
 
     #Méthode prenant en entrée un othellier et donnant en sortant l'othellier une fois que le joueur a joué 
-    def jouer(self,othellier,tour_nb):
+    def jouer(self,othellier):
     #Selon les types de joueurs, on appelle differentes fonctions de choix du move à faire
         if self.IA : 
-            if IAtype == 'MinMax' : 
+            if self.IAtype == 'MinMax' : 
                 return self.compMoveMinMax(othellier)
-            if IAtype == 'AlphaBeta' : 
+            if self.IAtype == 'AlphaBeta' : 
                 return self.compMoveAlphaBeta(othellier)
-            if IAtype == 'MCTS' : 
-                return self.compMoveMCTS(othellier,tour_nb)
+            if self.IAtype == 'MCTS' : 
+                return self.compMoveMCTS(othellier)
         else : 
             return self.joueurMove(othellier)
 
@@ -398,7 +406,7 @@ class Joueur(object):
         # Pour gérer le cas où il n'y a qu'1 seul successeur possible on le joue direct
         # Gère aussi le cas où celui d'avant a precedent_passe = True --> la partie va se finir car il a gagnant = 1 ou -1
         if len(othellier.liste_successeurs) == 1:
-            return Othellier (self.prof,-self.nb_joueur,othellier.liste_successeurs[0].tablier,othellier.liste_successeurs[0].precedent_passe)
+            return Othellier (self.prof_adv,-self.nb_joueur,othellier.liste_successeurs[0].tablier,othellier.liste_successeurs[0].precedent_passe)
 
         #On initialise le score max à une valeur très basse
         bestScore = -10000
@@ -413,7 +421,7 @@ class Joueur(object):
             #On est donc un étage plus bas sur l'arbre que l'othellier initial (d'où prof-1)
             #On est sur un étage Max, le prochain sera donc un étage Min (d'où le -joueur et False)
             # print("prof :",prof)
-            score = fct.MinMax(son,prof-1,-joueur,False)
+            score = fct.MinMax(son,self.prof-1,-self.nb_joueur,False)
             # print("score",score)
             #Ici, on cherche à maximiser le score du joueur, donc si le score dépasse le score max jusqu'à là :  
             # On change le best score et on retient le tablier du successeurs qui a ce nouveau score max
@@ -423,7 +431,7 @@ class Joueur(object):
                 ppasse = son.precedent_passe
         # Idée = on a la double info de ppasse et de prof.
         # Car si on retourne un successeur, perd de la prof au fur et à mesure des tours
-        return Othellier(self.prof,-self.nb_joueur,bestMove,ppasse)
+        return Othellier(self.prof_adv,-self.nb_joueur,bestMove,ppasse)
 
 
     def compMoveAlphaBeta(self,othellier):
@@ -431,7 +439,7 @@ class Joueur(object):
         # Pour gérer le cas où il n'y a qu'1 seul successeur possible on le joue direct
         # Gère aussi le cas où celui d'avant a precedent_passe = True --> la partie va se finir car il a gagnant = 1 ou -1
         if len(othellier.liste_successeurs) == 1:
-            return Othellier (self.prof,-self.nb_joueur,othellier.liste_successeurs[0].tablier,othellier.liste_successeurs[0].precedent_passe)
+            return Othellier (self.prof_adv,-self.nb_joueur,othellier.liste_successeurs[0].tablier,othellier.liste_successeurs[0].precedent_passe)
 
         # Pour gérer le cas où prof = 1 --> on retourne juste le max des successeurs
         if self.prof == 1:
@@ -453,7 +461,7 @@ class Joueur(object):
                     best_score = son.score
                     bestMove = son.tablier
                     ppasse = son.precedent_passe
-            return Othellier(self.prof,-self.nb_joueur,bestMove,ppasse)
+            return Othellier(self.prof_adv,-self.nb_joueur,bestMove,ppasse)
 
         # Initialisation de alpha et beta
         alpha = -100000000
@@ -476,7 +484,7 @@ class Joueur(object):
                             liste_successeurs_prof_i_plus_1.append(successeur_de_successeur)
                 liste_successeurs_prof_i = liste_successeurs_prof_i_plus_1.copy()
 
-    def compMoveMCTS(self,othellier,tour_nb):
+    def compMoveMCTS(self,othellier):
 
         #On initialise le score max à une valeur très basse
         bestScore = -10000
@@ -484,7 +492,7 @@ class Joueur(object):
         bestMove = np.array([[0 for i in range (8)] for j in range (8)])
 
         for T in range(3): # on fait T fois le processus de MCTS
-            fct.MCTS(othellier, self.prof, 2, T, tour_nb)
+            fct.MCTS(othellier, self.prof, 2, T)
         
         ppasse = FALSE
         #On va parcourir les successeurs de l'othellier actuel
@@ -497,10 +505,12 @@ class Joueur(object):
                 bestScore = score
                 bestMove = son.tablier
                 ppasse = son.precedent_passe
-        return Othellier(self.prof, -self.nb_joueur, bestMove, ppasse)
+        return Othellier(self.prof_adv, -self.nb_joueur, bestMove, ppasse)
     
 
     def joueurMove(self,othellier) : 
         #Demander au joueur où il veut jouer 
         #return l'othellier modifié 
         pass
+
+print(Partie(Display = False,list_IAtype = ['MinMax','AlphaBeta'], list_prof = [2,3]).result)

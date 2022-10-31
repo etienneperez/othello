@@ -81,59 +81,6 @@ def AlphaBeta(othellier,prof,joueur,alpha,beta,isMaximizing):
         return beta
 
 
-###################Fonction de choix du prochain move de l'ordi pour ALPHA BETA########################
-#Prend en entrée un othellier, la profondeur max d'exploration et le joueur qui joue 
-#En sortie : le tablier resultant du move qu'il a fait
-def compMoveAlphaBeta(othellier,prof,joueur):
-
-    # Pour gérer le cas où il n'y a qu'1 seul successeur possible on le joue direct
-    # Gère aussi le cas où celui d'avant a precedent_passe = True --> la partie va se finir car il a gagnant = 1 ou -1
-    if len(othellier.liste_successeurs) == 1:
-        return Othellier (prof,-joueur,othellier.liste_successeurs[0].tablier,othellier.liste_successeurs[0].precedent_passe)
-
-    # Pour gérer le cas où prof = 1 --> on retourne juste le max des successeurs
-    if prof == 1:
-        best_score = 0
-        bestMove = othellier.liste_successeurs[0].tablier
-        ppasse = False
-        for son in othellier.liste_successeurs:
-            # Si un oth successeur est gagnant, on le joue
-            if son.gagnant == joueur :
-                othellier.score = 1000
-                return son.tablier
-            # Si un oth successeur est gagnant pour l'adversaire, on ne le joue surtout pas
-            elif son.gagnant == -joueur : 
-                son.score = -1000
-            else:
-                son.score = son.evaluate()
-            
-            if son.score > best_score:
-                best_score = son.score
-                bestMove = son.tablier
-                ppasse = son.precedent_passe
-        return Othellier(prof,-joueur,bestMove,ppasse)
-
-    # Initialisation de alpha et beta
-    alpha = -100000000
-    beta = 100000000
-    ppasse = False
-    # On lance alpha-beta qui retourne le score de l'othellier cible vers lequel on doit aller
-    score_alpha_beta = AlphaBeta(othellier,prof,joueur,alpha,beta,True)
-    # On détermine quel othellier jouer pour être sur la branche qui mène à l'othellier cible dont le score est score_alpha_beta
-    for othellier_a_jouer in othellier.liste_successeurs:
-        liste_successeurs_prof_i = othellier_a_jouer.liste_successeurs
-        
-        for i in range(1,prof): # il faut faire prof-2 fois la boucle en gros, sinon après on atteint les feuilles et le calcul des successeurs fait une erreur. Donc 
-                                # donc on fait prof-1 fois la boucle et on met une condition sur le calcul des successeurs.
-            liste_successeurs_prof_i_plus_1 = []
-            for successeur in liste_successeurs_prof_i:
-                if successeur.score == score_alpha_beta:
-                    return Othellier(prof,-joueur,othellier_a_jouer.tablier,othellier_a_jouer.precedent_passe)
-                if i < prof-1: # cf explication plus haut, pour la dernière profondeur, one ne veut pas calculer les successeurs
-                    for successeur_de_successeur in successeur.liste_successeurs:
-                        liste_successeurs_prof_i_plus_1.append(successeur_de_successeur)
-            liste_successeurs_prof_i = liste_successeurs_prof_i_plus_1.copy()
-
 ########################## MCTS ###########################
 
 def MCTS(othellier, prof, C, T, i): # j'ai mis T ici dans l'idée qu'on va mettre la fonction MCTS en boucle avec un T qui augmente en dehors de l'appel de fonction
