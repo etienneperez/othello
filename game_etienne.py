@@ -35,6 +35,8 @@ class Othellier(object):
                     couleur = "white"
                 elif self.tablier[i,j] == -1:
                     couleur = "black"
+                elif [i,j] in self.liste_coord_successeurs:
+                    couleur = "grey"
                 else:
                     couleur = "green"
                 canvas2.create_rectangle(10+i*long, 10+j*long, 10+(i+1)*long, 10+(j+1)*long, fill = "green")
@@ -463,8 +465,7 @@ class Partie(object):
             joueur1 = Joueur(1, IA = (type_joueur_1 == "machine"),IAtype = IAtype_joueur_1, prof = prof_joueur_1, prof_adv = prof_joueur_2, MCTS_N = MCTS_N_joueur_1, MCTS_T = MCTS_T_joueur_1, MCTS_C = MCTS_C_joueur_1)
             joueur2 = Joueur(-1, IA = (type_joueur_2 == "machine"),IAtype = IAtype_joueur_2, prof = prof_joueur_2, prof_adv = prof_joueur_1, MCTS_N = MCTS_N_joueur_2, MCTS_T = MCTS_T_joueur_2, MCTS_C = MCTS_C_joueur_2)
 
-            self.list_prof = [prof_joueur_1,prof_joueur_2]
-            self.player1prof = self.list_prof[0]
+            self.player1prof = prof_joueur_1
 
             self.joueurs.append(joueur1)
             self.joueurs.append(joueur2)
@@ -473,18 +474,6 @@ class Partie(object):
         else : 
             self.joueurs.append(Joueur(1,True,self.list_IAtype[0],self.list_prof[0],self.list_prof[1],self.list_MCTS_N[0],self.list_MCTS_T[0],self.list_MCTS_C[0]))
             self.joueurs.append(Joueur(-1,True,self.list_IAtype[1],self.list_prof[1],self.list_prof[0],self.list_MCTS_N[1],self.list_MCTS_T[1],self.list_MCTS_C[1]))
-
-    # def fermer_fenetre(self):
-    #     fenetre.destroy()
-
-    def init_display(self):
-        #Méthode initialisant l'affiche du plateau 
-        pass
-
-    def change_display(self):
-        #Methode mettant a jour l'affichage du plateau pour qu'il corresponde à self.liste_othellier[-1]
-        #Peut-être utiliser self.liste_othellier[-1].liste_coord_successeurs pour afficher les cases jouables en une couleur un peu différente
-        pass
 
     
     def final_display(self):
@@ -496,7 +485,7 @@ class Partie(object):
         self.liste_othellier[-1].afficher() 
 
         # Et un message
-        canvas2.create_rectangle(10+2.5*long, 10+2.5*long, 10+6.5*long, 10+6.5*long, fill = "red",alpha = 0.5)
+        canvas2.create_rectangle(10+2*long, 10+2.5*long, 10+6*long, 10+5*long, fill = "red")
 
         if self.liste_othellier[-1].gagnant == 1:
             gagnant = "blanc"
@@ -505,10 +494,10 @@ class Partie(object):
         else:
             gagnant = "egalite"
         
-        if (gagnant == "blanc") and (gagnant == "noir"):
-            canvas2.create_text(10+4*long, 10+4*long, text="Le joueur {} a gagné !".format(gagnant), fill="white")
+        if (gagnant == "blanc") or (gagnant == "noir"):
+            canvas2.create_text(10+4*long, 10+3.5*long, text="Le joueur {} a gagné !".format(gagnant), fill="white", font=("Helvetica", 25))
         else:
-            canvas2.create_text(10+4*long, 10+4*long, text="Egalité !", fill="white")
+            canvas2.create_text(10+4*long, 10+3.5*long, text="Egalité !", fill="white",font=("Helvetica", 25))
     
 
     def game(self): 
@@ -526,9 +515,6 @@ class Partie(object):
 
     def game_with_display(self): 
 
-        print("nouveau tour", self.tour_nb)
-        print("self.tour_joueur",self.tour_joueur)
-        print("self.liste_othellier[-1].gagnant",self.liste_othellier[-1].gagnant)
 
         # On ajoute le nouvel othellier
         self.liste_othellier.append(self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1]))
@@ -542,11 +528,11 @@ class Partie(object):
         self.tour_nb += 1
 
         if self.liste_othellier[-1].gagnant == 0 :
-            fenetre2.after(1500,self.game_with_display)
+            fenetre2.after(500,self.game_with_display)
         else:
             self.result = self.liste_othellier[-1].gagnant # on ne doit le faire que quand la partie est finie on est ok ?
             print("fin partie au tour",self.tour_nb)
-            fenetre2.after(1500,self.final_display)
+            fenetre2.after(500,self.final_display)
 
         
 
@@ -599,6 +585,7 @@ class Joueur(object):
             #On est donc un étage plus bas sur l'arbre que l'othellier initial (d'où prof-1)
             #On est sur un étage Max, le prochain sera donc un étage Min (d'où le -joueur et False)
             # print("prof :",prof)
+            print("son",son)
             score = fct.MinMax(son,self.prof-1,-self.nb_joueur,False)
             # print("score",score)
             #Ici, on cherche à maximiser le score du joueur, donc si le score dépasse le score max jusqu'à là :  
@@ -626,11 +613,11 @@ class Joueur(object):
             ppasse = False
             for son in othellier.liste_successeurs:
                 # Si un oth successeur est gagnant, on le joue
-                if son.gagnant == joueur :
+                if son.gagnant == self.nb_joueur :
                     othellier.score = 1000
-                    return son.tablier
+                    # return son.tablier
                 # Si un oth successeur est gagnant pour l'adversaire, on ne le joue surtout pas
-                elif son.gagnant == -joueur : 
+                elif son.gagnant == -self.nb_joueur : 
                     son.score = -1000
                 else:
                     son.score = son.evaluate()
@@ -656,7 +643,7 @@ class Joueur(object):
                 liste_successeurs_prof_i_plus_1 = []
                 for successeur in liste_successeurs_prof_i:
                     if successeur.score == score_alpha_beta:
-                        return Othellier(self.prof,-self.nb_joueur,othellier_a_jouer.tablier,othellier_a_jouer.precedent_passe)
+                        return Othellier(self.prof_adv,-self.nb_joueur,othellier_a_jouer.tablier,othellier_a_jouer.precedent_passe)
                     if i < self.prof-1: # cf explication plus haut, pour la dernière profondeur, one ne veut pas calculer les successeurs
                         for successeur_de_successeur in successeur.liste_successeurs:
                             liste_successeurs_prof_i_plus_1.append(successeur_de_successeur)
