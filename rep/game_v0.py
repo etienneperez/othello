@@ -451,11 +451,10 @@ class Joueur(object):
             ppasse = False
             for son in othellier.liste_successeurs:
                 # Si un oth successeur est gagnant, on le joue
-                if son.gagnant == joueur :
+                if son.gagnant == self.nb_joueur :
                     othellier.score = 1000
-                    return son.tablier
                 # Si un oth successeur est gagnant pour l'adversaire, on ne le joue surtout pas
-                elif son.gagnant == -joueur : 
+                elif son.gagnant == -self.nb_joueur : 
                     son.score = -1000
                 else:
                     son.score = son.evaluate()
@@ -482,7 +481,7 @@ class Joueur(object):
                 liste_successeurs_prof_i_plus_1 = []
                 for successeur in liste_successeurs_prof_i:
                     if successeur.score == score_alpha_beta:
-                        return Othellier(self.prof,-self.nb_joueur,othellier_a_jouer.tablier,othellier_a_jouer.precedent_passe)
+                        return Othellier(self.prof_adv,-self.nb_joueur,othellier_a_jouer.tablier,othellier_a_jouer.precedent_passe)
                     if i < self.prof-1: # cf explication plus haut, pour la dernière profondeur, one ne veut pas calculer les successeurs
                         for successeur_de_successeur in successeur.liste_successeurs:
                             liste_successeurs_prof_i_plus_1.append(successeur_de_successeur)
