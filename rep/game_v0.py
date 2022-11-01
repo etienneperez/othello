@@ -4,6 +4,7 @@ import numpy as np
 from math import *
 from tkinter import *
 import tkinter as tk
+from tkinter import ttk
 from random import randint, random
 import copy as copy
 
@@ -28,8 +29,7 @@ class Othellier(object):
 
 
     # Méthode pour afficher un othellier.
-    def afficher(self,canvas,long):
-        canvas.delete("ALL")
+    def afficher(self):
         couleur = ""
         for i in range(8):
             for j in range(8):
@@ -37,9 +37,12 @@ class Othellier(object):
                     couleur = "white"
                 elif self.tablier[i,j] == -1:
                     couleur = "black"
-                else:
+                elif [i,j] in self.liste_coord_successeurs:
                     couleur = "grey"
-                canvas.create_rectangle(10+i*long, 10+j*long, 10+(i+1)*long, 10+(j+1)*long, fill = couleur)
+                else:
+                    couleur = "green"
+                canvas2.create_rectangle(10+i*long, 10+j*long, 10+(i+1)*long, 10+(j+1)*long, fill = "green")
+                canvas2.create_oval(10+i*long +long/7, 10+j*long +long/7, 10+(i+1)*long -long/7, 10+(j+1)*long -long/7, fill = couleur, outline = "green")
                 j += 1
             i += 1
 
@@ -312,9 +315,15 @@ class Partie(object):
         self.ask_define_player() #création des deux joueurs
         self.init_othellier() #initialisation de l'othellier 
         if self.Display : #si on a un affichage
-            self.init_display() #Initialisation de l'affichage
-            self.game() #Jeu
-            self.final_display() # Affichage de fin de partie
+            global fenetre2, canvas2
+            fenetre2 = tk.Tk()
+            fenetre2.configure(height = 20*long, width = 20*long)
+            canvas2 = tk.Canvas(fenetre2, width=10*long, height=10*long, background='white')
+            canvas2.pack()
+            # On fait tourner le jeu qui affiche les othelliers au fur et à mesure
+            self.game_with_display() #Jeu
+
+            fenetre2.mainloop()
         else : 
             self.game() #Jeu
             
@@ -332,14 +341,136 @@ class Partie(object):
         self.liste_othellier = [Othellier(self.player1prof,1,tablier_0)]
 
     def ask_define_player(self): 
-        if self.Display : 
-            pass
         #Demande à l'utilisateur de rentrer le type de joueurs qu'il veut voir s'affronter 
         #Possibilités : utilisateur ou IA
         #Si IA : MCTS, MinMax ou AlphaBeta et indiquer la profondeur d'exploration
         #self.joueurs.append(joueur1) sachant que joueur1 = Joueur(1,True/False,IAtype,prof,prof_adv,nb_simul_MCTS)
         #self.joueurs.append(joueur2) sachant que joueur2 = Joueur(-1,True/False,IAtype,prof,prof_adv,nb_simul_MCTS)
         # + il faut modifier self.player1 prof pour pouvoir créer l'othellier initial
+        if self.Display : 
+                    
+            global long
+            long = 80
+
+            fenetre = tk.Tk() # crée une fenêter sur laquelle on va pouvoir travailler
+            fenetre.configure(height = 20*long, width = 20*long) # Règle les paramètres de la fenêtre --> laisse une marge de 3*long autour du tablier
+
+            canvas = tk.Canvas(fenetre, width=10*long, height=10*long, background='white')
+
+            label = tk.Label(fenetre, text="Qui voulez-vous voir jouer ? Avec quels paramètres ?", font=("Helvetica", 20))
+            label.place(x = 10 + 4*long, y = 10 + long)
+
+            type_joueur = ["humain","machine"]
+            type_1 = StringVar()
+            label = tk.Label(fenetre, text="Joueur 1", font=("Helvetica", 20))
+            label.place(x = 10 + 5*long, y = 10 + 2*long)
+            widget = ttk.Combobox(fenetre, textvariable = type_1, values=type_joueur)
+            widget.current(1)
+            widget['state'] = 'readonly'
+            widget.place(x = 10 + 4*long, y= 3*long)
+            type_2 = StringVar()
+            label = tk.Label(fenetre, text="Joueur 2", font=("Helvetica", 20))
+            label.place(x = 10 + 8*long, y = 10 + 2*long)
+            widget = ttk.Combobox(fenetre, textvariable = type_2, values=type_joueur)
+            widget.current(1)
+            widget['state'] = 'readonly'
+            widget.place(x = 10 + 7*long, y= 3*long)
+            
+
+            IAtype = ["MinMax","AlphaBeta","MCTS"]
+            IAtype_1 = StringVar()
+            label = tk.Label(fenetre, text="Quel algorithme ?", font=("Helvetica", 16))
+            label.place(x = 10 + 2*long, y = 4*long)
+            widget = ttk.Combobox(fenetre, textvariable = IAtype_1, values=IAtype)
+            widget.current(0)
+            widget['state'] = 'readonly'
+            widget.place(x = 10 + 4*long, y= 4*long)
+            IAtype_2 = StringVar()
+            widget = ttk.Combobox(fenetre, textvariable = IAtype_2, values=IAtype)
+            widget.current(0)
+            widget['state'] = 'readonly'
+            widget.place(x = 10 + 7*long, y= 4*long)
+            
+
+            label = tk.Label(fenetre, text="Quelle profondeur d'exploration ?", font=("Helvetica", 16))
+            label.place(x = 10 + long, y = 5*long)
+            prof_1 = tk.IntVar()
+            prof_1.set(3)
+            widget = tk.Scale(fenetre, variable=prof_1, orient='horizontal', from_=1, to=6, resolution=1, tickinterval=1, length=100)
+            widget.place(x = 10 + 5*long, y = 5*long)
+            prof_2 = tk.IntVar()
+            prof_2.set(3)
+            widget = tk.Scale(fenetre, variable=prof_2, orient='horizontal', from_=1, to=6, resolution=1, tickinterval=1, length=100)
+            widget.place(x = 10 + 8*long, y = 5*long)
+            
+            
+            label = tk.Label(fenetre, text="MCTS : nombre de simulations ?", font=("Helvetica", 16))
+            label.place(x = 10 + long, y = 6*long)
+            MCTS_N_1 = tk.IntVar()
+            MCTS_N_1.set(10)
+            widget = tk.Scale(fenetre, variable=MCTS_N_1, orient='horizontal', from_=1, to=100, resolution=1, tickinterval=25, length=100)
+            widget.place(x = 10 + 5*long, y = 6*long)
+            MCTS_N_2 = tk.IntVar()
+            MCTS_N_2.set(10)
+            widget = tk.Scale(fenetre, variable=MCTS_N_2, orient='horizontal', from_=1, to=100, resolution=1, tickinterval=25, length=100)
+            widget.place(x = 10 + 8*long, y = 6*long)
+            
+
+            label = tk.Label(fenetre, text="MCTS : T ?", font=("Helvetica", 16))
+            label.place(x = 10 + long, y = 7*long)
+            MCTS_T_1 = tk.IntVar()
+            MCTS_T_1.set(5)
+            widget = tk.Scale(fenetre, variable=MCTS_T_1, orient='horizontal', from_=1, to=5, resolution=1, tickinterval=1, length=100)
+            widget.place(x = 10 + 5*long, y = 7*long)
+            MCTS_T_2 = tk.IntVar()
+            MCTS_T_2.set(5)
+            widget = tk.Scale(fenetre, variable=MCTS_T_2, orient='horizontal', from_=1, to=5, resolution=1, tickinterval=1, length=100)
+            widget.place(x = 10 + 8*long, y = 7*long)
+            
+
+            label = tk.Label(fenetre, text="MCTS : paramètre C ?", font=("Helvetica", 16))
+            label.place(x = 10 + long, y = 8*long)
+            MCTS_C_1 = tk.IntVar()
+            MCTS_C_1.set(2)
+            widget = tk.Scale(fenetre, variable=MCTS_C_1, orient='horizontal', from_=1, to=5, resolution=1, tickinterval=1, length=100)
+            widget.place(x = 10 + 5*long, y = 8*long)
+            MCTS_C_2 = tk.IntVar()
+            MCTS_C_2.set(2)
+            widget = tk.Scale(fenetre, variable=MCTS_C_2, orient='horizontal', from_=1, to=5, resolution=1, tickinterval=1, length=100)
+            widget.place(x = 10 + 8*long, y = 8*long)
+            
+            bouton = tk.Button(fenetre, text="Valider et lancer la partie", command = fenetre.destroy)
+            bouton.place(x = 7*long, y= 9*long)
+
+            canvas.pack()
+            fenetre.mainloop()
+
+            type_joueur_1 = type_1.get()
+            type_joueur_2 = type_2.get()
+            IAtype_joueur_1 = IAtype_1.get()
+            IAtype_joueur_2 = IAtype_2.get()
+            prof_joueur_1 = prof_1.get()
+            prof_joueur_2 = prof_2.get()
+            MCTS_N_joueur_1 = MCTS_N_1.get()
+            MCTS_N_joueur_2 = MCTS_N_2.get()
+            MCTS_T_joueur_1 = MCTS_T_1.get()
+            MCTS_T_joueur_2 = MCTS_T_2.get()
+            MCTS_C_joueur_1 = MCTS_C_1.get()
+            MCTS_C_joueur_2 = MCTS_C_2.get()
+
+            # print("type_joueur_1",type_joueur_1)
+            # print("type_joueur_2",type_joueur_2)
+            # print("IAtype_joueur_1",IAtype_joueur_1)
+            # print("IAtype_joueur_2",IAtype_joueur_2)
+            # print("prof_joueur_1",prof_joueur_1)
+            # print("MCTS_C_joueur_1", MCTS_C_joueur_1)
+            joueur1 = Joueur(1, IA = (type_joueur_1 == "machine"),IAtype = IAtype_joueur_1, prof = prof_joueur_1, prof_adv = prof_joueur_2, MCTS_N = MCTS_N_joueur_1, MCTS_T = MCTS_T_joueur_1, MCTS_C = MCTS_C_joueur_1)
+            joueur2 = Joueur(-1, IA = (type_joueur_2 == "machine"),IAtype = IAtype_joueur_2, prof = prof_joueur_2, prof_adv = prof_joueur_1, MCTS_N = MCTS_N_joueur_2, MCTS_T = MCTS_T_joueur_2, MCTS_C = MCTS_C_joueur_2)
+
+            self.player1prof = prof_joueur_1
+
+            self.joueurs.append(joueur1)
+            self.joueurs.append(joueur2)            
 
         #Si il n'y a pas d'affichage, les informations sur les deux joueurs sont directement dans la création de l'instance partie grace aux attribut list_IAtype, list_prof et list_nb_simul_MCTS
         else : 
@@ -359,19 +490,59 @@ class Partie(object):
     def final_display(self):
         #Méthode affichant quelque chose de spécial pour la fin de partie
         #C'est pas obligatoire mais ça peut être pas mal d'avoir un affichage genre "Joueur 1 à gagné"
-        pass 
+        # On affiche l'othellier final
+        canvas2.delete("all")
+        self.liste_othellier[-1].afficher() 
+
+        # Et un message
+        canvas2.create_rectangle(10+2*long, 10+2.5*long, 10+6*long, 10+5*long, fill = "red")
+
+        if self.liste_othellier[-1].gagnant == 1:
+            gagnant = "blanc"
+        elif self.liste_othellier[-1].gagnant == -1:
+            gagnant = "noir"
+        else:
+            gagnant = "egalite"
+        
+        if (gagnant == "blanc") or (gagnant == "noir"):
+            canvas2.create_text(10+4*long, 10+3.5*long, text="Le joueur {} a gagné !".format(gagnant), fill="white", font=("Helvetica", 25))
+        else:
+            canvas2.create_text(10+4*long, 10+3.5*long, text="Egalité !", fill="white",font=("Helvetica", 25))
     
     def game(self): 
         #boucle de jeu 
         while self.liste_othellier[-1].gagnant == 0 : #Si l'othellier est gagnant on s'arrête
             self.liste_othellier.append(self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1]))
-            if self.Display : 
-                self.change_display()
-            print(self.liste_othellier[-1].tablier)
+            print("nouveau tour")
+            # if self.Display :
+            #     self.change_display()
+            # print(self.liste_othellier[-1].tablier)
             self.tour_joueur = - self.tour_joueur #changement de joueur
             self.tour_nb += 1
         #Si on est en mode sans affichage, on veut juste retourner le joueur gagnant
         self.result = self.liste_othellier[-1].gagnant
+
+    def game_with_display(self): 
+
+
+        # On ajoute le nouvel othellier
+        self.liste_othellier.append(self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1]))
+
+        # On affiche le nouvel othellier
+        canvas2.delete("all")
+        self.liste_othellier[-1].afficher()
+
+        # On met à jour le joueur et le num du tour
+        self.tour_joueur = - self.tour_joueur 
+        self.tour_nb += 1
+
+        if self.liste_othellier[-1].gagnant == 0 :
+            fenetre2.after(500,self.game_with_display)
+        else:
+            self.result = self.liste_othellier[-1].gagnant # on ne doit le faire que quand la partie est finie on est ok ?
+            print("fin partie au tour",self.tour_nb)
+            fenetre2.after(500,self.final_display)
+
 
 
 
@@ -710,4 +881,5 @@ def simulation_MCTS(othellier, prof, joueur):
         i += 1
     return(liste_othellier_partie[-1])
 
-print(Partie(Display = False,list_IAtype = ['MCTS','MCTS'], list_prof = [2,3]).result)
+#print(Partie(Display = False,list_IAtype = ['MCTS','MCTS'], list_prof = [2,3]).result)
+partie_1 = Partie()
