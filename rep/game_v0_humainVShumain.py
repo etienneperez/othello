@@ -415,9 +415,9 @@ class Partie(object):
     def game_with_display(self): 
         # obligé de séparer quand humain joue et quand machine joue car sinon ça marche po
         # la différence est dans le rappel de game_with_display : machine le fait juste après qqs sec, alors que humain ça ne rappelle pas tant que y'a pas eu de clic ou bouton
-        print("self.tour_nb :",self.tour_nb)
-        print("self.tour_joueur :", self.tour_joueur)
-        print("self.joueurs[self.tour_joueur].IA",self.joueurs[self.tour_joueur].IA)
+        # print("self.tour_nb :",self.tour_nb)
+        # print("self.tour_joueur :", self.tour_joueur)
+        # print("self.joueurs[self.tour_joueur].IA",self.joueurs[self.tour_joueur].IA)
         # Cas où un humain joue à ce tour
         if self.joueurs[self.tour_joueur].IA == False:
             
@@ -435,10 +435,10 @@ class Partie(object):
                     # On met à jour le joueur et le num du tour
                     self.tour_joueur = - self.tour_joueur 
                     self.tour_nb += 1
-                    fenetre2.after(1000,self.game_with_display)
+                    fenetre2.after(2000,self.game_with_display)
                 else:
                     self.result = self.liste_othellier[-1].gagnant # on ne doit le faire que quand la partie est finie on est ok ?
-                    fenetre2.after(500,self.final_display)
+                    fenetre2.after(2000,self.final_display)
             
             else :
                 # Important pour humain VS humain sinon on n'a pas l'othellier de départ
@@ -476,14 +476,14 @@ class Partie(object):
                     # On met à jour le joueur et le num du tour
                     self.tour_joueur = - self.tour_joueur 
                     self.tour_nb += 1
-                    fenetre2.after(1000,self.game_with_display)
+                    fenetre2.after(2000,self.game_with_display)
                 else:
                     self.result = self.liste_othellier[-1].gagnant # on ne doit le faire que quand la partie est finie on est ok ?
-                    fenetre2.after(500,self.final_display)
+                    fenetre2.after(2000,self.final_display)
 
         # Cas où une IA joue à ce tour
         else:
-            print("self.liste_othellier",self.liste_othellier)
+            # print("self.liste_othellier",self.liste_othellier)
             # On ajoute le nouvel othellier
             self.liste_othellier.append(self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1]))
 
@@ -846,7 +846,7 @@ def simulation_n_parties():
     nb_victoires = ["Victoires : ",0,0,0] # Position 1 = joueur 1, position 2 = égalité, et position -1 = joueur -1.
     
     while nb_simulation < 51:
-        print("nb_simulation",nb_simulation)
+        # print("nb_simulation",nb_simulation)
 
         partie_i = Partie(False)
         nb_victoires[partie_i.result] += 1 # on ajoute 1 victoire au gagnant
