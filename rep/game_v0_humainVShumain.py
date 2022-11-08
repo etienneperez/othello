@@ -449,27 +449,26 @@ class Partie(object):
                 event_var = IntVar()
 
                 def choisir_position(event):
-                    if self.joueurs[self.tour_joueur].IA == False: # cela sert à court-circuiter le défaut de TKinter qui déclenche des évènements Button Press parfois de manière aléatoire
-                        print("event :",event)
-                        x = event.x
-                        y = event.y
-                        for i in range(8):
-                            for j in range(8):
-                                if (x > 10+i*long) and (x < 10+(i+1)*long) and (y >10+j*long) and (y < 10+(j+1)*long):
-                                    coord_choisies = [j,i]
-                        index_successeur = 0
-                        for coord in self.liste_othellier[-1].liste_coord_successeurs:
-                            if coord == coord_choisies:
-                                print("coord choisies")
-                                print("len(self.liste_othellier)",len(self.liste_othellier))
-                                self.liste_othellier.append(Othellier(self.joueurs[self.tour_joueur].prof_adv,-self.tour_joueur,self.liste_othellier[-1].liste_successeurs[index_successeur].tablier,self.liste_othellier[-1].liste_successeurs[index_successeur].precedent_passe))
-                                
-                                # On affiche le nouvel othellier
-                                canvas2.delete("all")
-                                self.liste_othellier[-1].afficher()
-                                
-                                event_var.set(1) # on modifie event_var pour arrêter le wait_variable
-                            index_successeur += 1
+                    print("event :",event)
+                    x = event.x
+                    y = event.y
+                    for i in range(8):
+                        for j in range(8):
+                            if (x > 10+i*long) and (x < 10+(i+1)*long) and (y >10+j*long) and (y < 10+(j+1)*long):
+                                coord_choisies = [j,i]
+                    index_successeur = 0
+                    for coord in self.liste_othellier[-1].liste_coord_successeurs:
+                        if coord == coord_choisies:
+                            print("coord choisies")
+                            print("len(self.liste_othellier)",len(self.liste_othellier))
+                            self.liste_othellier.append(Othellier(self.joueurs[self.tour_joueur].prof_adv,-self.tour_joueur,self.liste_othellier[-1].liste_successeurs[index_successeur].tablier,self.liste_othellier[-1].liste_successeurs[index_successeur].precedent_passe))
+                            
+                            # On affiche le nouvel othellier
+                            canvas2.delete("all")
+                            self.liste_othellier[-1].afficher()
+                            
+                            event_var.set(1) # on modifie event_var pour arrêter le wait_variable
+                        index_successeur += 1
 
                 
                 canvas2.bind('<Button-1>',choisir_position)
@@ -477,6 +476,11 @@ class Partie(object):
 
                 # On relance game_with_display dès qu'il y a eu clic ou bouton
                 fenetre2.wait_variable(event_var)
+
+                def rien(event):
+                    print("rien")
+                # Dès qu'on a fini le tour, on bind le clique à une fonction qui ne fait rieen pour pas que ça pose de prob si on clique sans faire exprès
+                canvas2.bind('<Button-1>',rien)
 
                 # On relance gam_with_display
                 if self.liste_othellier[-1].gagnant == 0 :
