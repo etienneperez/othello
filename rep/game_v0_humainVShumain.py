@@ -470,6 +470,7 @@ class Partie(object):
                                 
                                 event_var.set(1) # on modifie event_var pour arrêter le wait_variable
                             index_successeur += 1
+
                 
                 canvas2.bind('<Button-1>',choisir_position)
                 canvas2.focus_set()
