@@ -415,12 +415,14 @@ class Partie(object):
     def game_with_display(self): 
         # obligé de séparer quand humain joue et quand machine joue car sinon ça marche po
         # la différence est dans le rappel de game_with_display : machine le fait juste après qqs sec, alors que humain ça ne rappelle pas tant que y'a pas eu de clic ou bouton
-        # print("self.tour_nb :",self.tour_nb)
-        # print("self.tour_joueur :", self.tour_joueur)
-        # print("self.joueurs[self.tour_joueur].IA",self.joueurs[self.tour_joueur].IA)
+        print("self.tour_nb :",self.tour_nb)
+        print("self.tour_joueur :", self.tour_joueur)
+        print("self.joueurs[self.tour_joueur].IA",self.joueurs[self.tour_joueur].IA)
+        print("self.liste_othellier",self.liste_othellier)
+        print("len(self.liste_othellier)",len(self.liste_othellier))
         # Cas où un humain joue à ce tour
         if self.joueurs[self.tour_joueur].IA == False:
-            
+            print("entrée joueur humain")
             # S'il n'y a rien à jouer, on ne laisse pas l'humain jouer, ça passe automatiquement
             # Gère aussi le cas où celui d'avant a precedent_passe = True --> la partie va se finir car celui qu'on ajoute là aura gagnant = 1 ou -1
             # Ne pose pas de prob dans le cas où il y avait juste 1 seul successeur possible = on le joue direct et le passe restera False
@@ -447,23 +449,27 @@ class Partie(object):
                 event_var = IntVar()
 
                 def choisir_position(event):
-                    x = event.x
-                    y = event.y
-                    for i in range(8):
-                        for j in range(8):
-                            if (x > 10+i*long) and (x < 10+(i+1)*long) and (y >10+j*long) and (y < 10+(j+1)*long):
-                                coord_choisies = [j,i]
-                    index_successeur = 0
-                    for coord in self.liste_othellier[-1].liste_coord_successeurs:
-                        if coord == coord_choisies:
-                            self.liste_othellier.append(Othellier(self.joueurs[self.tour_joueur].prof_adv,-self.tour_joueur,self.liste_othellier[-1].liste_successeurs[index_successeur].tablier,self.liste_othellier[-1].liste_successeurs[index_successeur].precedent_passe))
-                            
-                            # On affiche le nouvel othellier
-                            canvas2.delete("all")
-                            self.liste_othellier[-1].afficher()
-                            
-                            event_var.set(1) # on modifie event_var pour arrêter le wait_variable
-                        index_successeur += 1
+                    if self.joueurs[self.tour_joueur].IA == False: # cela sert à court-circuiter le défaut de TKinter qui déclenche des évènements Button Press parfois de manière aléatoire
+                        print("event :",event)
+                        x = event.x
+                        y = event.y
+                        for i in range(8):
+                            for j in range(8):
+                                if (x > 10+i*long) and (x < 10+(i+1)*long) and (y >10+j*long) and (y < 10+(j+1)*long):
+                                    coord_choisies = [j,i]
+                        index_successeur = 0
+                        for coord in self.liste_othellier[-1].liste_coord_successeurs:
+                            if coord == coord_choisies:
+                                print("coord choisies")
+                                print("len(self.liste_othellier)",len(self.liste_othellier))
+                                self.liste_othellier.append(Othellier(self.joueurs[self.tour_joueur].prof_adv,-self.tour_joueur,self.liste_othellier[-1].liste_successeurs[index_successeur].tablier,self.liste_othellier[-1].liste_successeurs[index_successeur].precedent_passe))
+                                
+                                # On affiche le nouvel othellier
+                                canvas2.delete("all")
+                                self.liste_othellier[-1].afficher()
+                                
+                                event_var.set(1) # on modifie event_var pour arrêter le wait_variable
+                            index_successeur += 1
                 
                 canvas2.bind('<Button-1>',choisir_position)
                 canvas2.focus_set()
@@ -483,9 +489,14 @@ class Partie(object):
 
         # Cas où une IA joue à ce tour
         else:
+            print("entrée joueur machine")
             # print("self.liste_othellier",self.liste_othellier)
             # On ajoute le nouvel othellier
+
+            print("self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1])",self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1]))
+            print("len(self.liste_othellier) avant append jouer",len(self.liste_othellier))
             self.liste_othellier.append(self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1]))
+            print("len(self.liste_othellier) apres append jouer",len(self.liste_othellier))
 
             # On affiche le nouvel othellier
             canvas2.delete("all")
