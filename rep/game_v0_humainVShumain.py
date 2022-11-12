@@ -310,9 +310,9 @@ class Partie(object):
         #Ce sont des listes de tailles deux : un élément pour chaque joueur
         self.list_IAtype = list_IAtype #Type de l'IA Minmax, AlphaBeta, MCTS
         self.list_prof = list_prof #Prof
-        self.list_MCTS_N = list_MCTS_N  #Nombre de simulations pour le MCTS
-        self.list_MCTS_T = list_MCTS_T  #Nombre de simulations pour le T de l'algo MCTS
-        self.list_MCTS_C = list_MCTS_C  #Nombre de simulations pour le S de l'algo MCTS
+        self.list_MCTS_N = list_MCTS_N  #Nombre de simulations totale pour le MCTS
+        self.list_MCTS_T = list_MCTS_T  #Nombre de simulations de parties aléatoire de l'algo MCTS
+        self.list_MCTS_C = list_MCTS_C  #Paramètre C pour le calcul de l'UCB
 
         self.result = 0 #Résultat de la partie 
         self.player1prof = list_prof[0] #prof max du joueur 1, nécessaire pour la création de l'othellier initial
@@ -498,9 +498,12 @@ class Partie(object):
             # print("self.liste_othellier",self.liste_othellier)
             # On ajoute le nouvel othellier
 
-            print("self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1])",self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1]))
+            #print("self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1])",self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1]))
+            othellier_en_jeu = self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1])
+            print("othellier en jeu", othellier_en_jeu)
             print("len(self.liste_othellier) avant append jouer",len(self.liste_othellier))
-            self.liste_othellier.append(self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1]))
+            #self.liste_othellier.append(self.joueurs[self.tour_joueur].jouer(self.liste_othellier[-1]))
+            self.liste_othellier.append(othellier_en_jeu)
             print("len(self.liste_othellier) apres append jouer",len(self.liste_othellier))
 
             # On affiche le nouvel othellier
@@ -516,8 +519,6 @@ class Partie(object):
             else:
                 self.result = self.liste_othellier[-1].gagnant # on ne doit le faire que quand la partie est finie on est ok ?
                 fenetre2.after(500,self.final_display)
-
-
 
 
 class Joueur(object):
@@ -630,17 +631,19 @@ class Joueur(object):
                 liste_successeurs_prof_i = liste_successeurs_prof_i_plus_1.copy()
 
     def compMoveMCTS(self,othellier):
-
         #On initialise le score max à une valeur très basse
+        print("entrée compmove mcts")
         bestScore = -10000
         #On initialise le tablier de sortie comme on veut
         bestMove = np.array([[0 for i in range (8)] for j in range (8)])
 
-        for N in range(self.MCTS_T): # on fait T fois le processus de MCTS
+        for N in range(1,self.MCTS_N+1): # on fait N fois le processus de MCTS
             #fct.MCTS(othellier, self.prof, self.MCTS_C, N) #ajouter en paramétre N, nombre de simulations, MCTS_N
-            MCTS(othellier, self.prof, self.MCTS_C, N) #ajouter en paramétre N, nombre de simulations, MCTS_N
+            print("début MCTS")
+            print("valeur de N", N)
+            MCTS(othellier, self.prof, self.MCTS_C, N, self.MCTS_T) #ajouter en paramétre N, nombre de simulations, MCTS_N
 
-        
+        print("sortie MCTS")
         ppasse = FALSE
         #On va parcourir les successeurs de l'othellier actuel
         #C'est un de ces successeurs que l'on va choisir, il faut donc les évaluer
@@ -737,7 +740,7 @@ def AlphaBeta(othellier,prof,joueur,alpha,beta,isMaximizing):
                 break
         return beta
 
-def MCTS(othellier, prof, C, N): # j'ai mis N ici dans l'idée qu'on va mettre la fonction MCTS en boucle avec un N qui augmente en dehors de l'appel de fonction
+def MCTS(othellier, prof, C, N, T): # j'ai mis N ici dans l'idée qu'on va mettre la fonction MCTS en boucle avec un N qui augmente en dehors de l'appel de fonction
     othelliers_choisis = [othellier]
     while othelliers_choisis[-1].n > 1: # tant qu'on est sur un othellier qui a été visité AU MOINS 2 fois donc qui a au moins eu une expansion
         othellier_pere = othellier 
@@ -787,8 +790,11 @@ def MCTS(othellier, prof, C, N): # j'ai mis N ici dans l'idée qu'on va mettre l
     joueur = othellier_joue.joueur # maintenant qu'on sait de quel othellier on part on sait qui joue et on peut lancer la partie aléatoire
 
     ########## SIMULATION ##########
-
-    othellier_final = simulation_MCTS(othellier_joue, 1, joueur)    
+    print("lancé simu aléatoire")
+    for simu_aleatoire in range(T):
+        print("T", simu_aleatoire)
+        othellier_final = simulation_MCTS(othellier_joue, 1, joueur)    
+        print("gagnant de la partie aléatoire", othellier_final.gagnant)
 
     ########## RETRO PROPAGATION jusqu'à l'othellier duquel est parti le MCTS ##########
 
@@ -797,23 +803,23 @@ def MCTS(othellier, prof, C, N): # j'ai mis N ici dans l'idée qu'on va mettre l
     # à l'inverse, une partie perdue = un score t qui diminue de 1
 
     # actualisation de n pour le noeud joué
-    othellier_joue.n += 1
+        othellier_joue.n += 1
 
     # actualisation de t pour le noeud joué
-    if othellier_final.gagnant == joueur: # si ce joueur gagne la partie
-        score = 1
-        if othellier_joue.t == 10000: # si le noeud est visité pour la première fois, son score initial est de 10000
-            othellier_joue.t = score # l'othellier duquel le jeu est parti prend 1
-        else:
-            othellier_joue.t += score 
-    elif othellier_final.gagnant == 2: # en cas d'égalité
-        score = 0
-    elif othellier_final.gagnant == -joueur:
-        score = -1
-        if othellier_joue.t == 10000:
-             othellier_joue.t = score
-        else:
-            othellier_joue.t += score # en cas de défaite
+        if othellier_final.gagnant == joueur: # si ce joueur gagne la partie
+            score = 1
+            if othellier_joue.t == 10000: # si le noeud est visité pour la première fois, son score initial est de 10000
+                othellier_joue.t = score # l'othellier duquel le jeu est parti prend 1
+            else:
+                othellier_joue.t += score 
+        elif othellier_final.gagnant == 2: # en cas d'égalité
+            score = 0
+        elif othellier_final.gagnant == -joueur:
+            score = -1
+            if othellier_joue.t == 10000:
+                othellier_joue.t = score
+            else:
+                othellier_joue.t += score # en cas de défaite
 
     # maintenant on veut faire remonter l'information sur la victoire/défaite après la partie aléatoire grâce à la liste othelliers_choisis
 
@@ -839,7 +845,6 @@ def simulation_MCTS(othellier, prof, joueur):
     joueur = othellier_0.joueur #A qui le tour ? 
     # Boucle de jeu
     while liste_othellier_partie[i].gagnant == 0 : #si les deux joueurs passent successivement, c'est qu'on ne peut plus jouer, on arrête
-        #liste_othellier_partie.append(compMove(liste_othellier_partie[i],prof,joueur))
         nbr_successeurs = len(liste_othellier_partie[i].liste_successeurs)
         successeur_aleatoire = liste_othellier_partie[i].liste_successeurs[randint(0, nbr_successeurs-1)]
         liste_othellier_partie.append(Othellier(1, -joueur, successeur_aleatoire.tablier, successeur_aleatoire.precedent_passe)) 
@@ -949,15 +954,15 @@ widget = tk.Scale(fenetre, variable=MCTS_N_2, orient='horizontal', from_=1, to=1
 widget.place(x = 10 + 8*long, y = 6*long)
 
 
-label = tk.Label(fenetre, text="MCTS : T ?", font=("Helvetica", 16))
+label = tk.Label(fenetre, text="MCTS : nombre de simulations aléatoires ?", font=("Helvetica", 16))
 label.place(x = 10 + long, y = 7*long)
 MCTS_T_1 = tk.IntVar()
 MCTS_T_1.set(5)
-widget = tk.Scale(fenetre, variable=MCTS_T_1, orient='horizontal', from_=1, to=5, resolution=1, tickinterval=1, length=100)
+widget = tk.Scale(fenetre, variable=MCTS_T_1, orient='horizontal', from_=1, to=100, resolution=1, tickinterval=25, length=100)
 widget.place(x = 10 + 5*long, y = 7*long)
 MCTS_T_2 = tk.IntVar()
 MCTS_T_2.set(5)
-widget = tk.Scale(fenetre, variable=MCTS_T_2, orient='horizontal', from_=1, to=5, resolution=1, tickinterval=1, length=100)
+widget = tk.Scale(fenetre, variable=MCTS_T_2, orient='horizontal', from_=1, to=100, resolution=1, tickinterval=25, length=100)
 widget.place(x = 10 + 8*long, y = 7*long)
 
 
