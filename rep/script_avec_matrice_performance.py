@@ -251,7 +251,7 @@ class Othellier(object):
     #Pour l'instant elle est basé uniquement sur l'occupation des coins. 
     #Un coin capturé vaut 60. 
     #Un jeton autour d'un coin non-capturé vaut -20 car ça donne l'opportunité à l'autre joueur de capturer le coin
-    def evaluate (self):
+    def evaluate (self,tour_joueur):
         #initialisation du score
         pscore = 0
         # pour parcourir les quatres coins 
@@ -260,17 +260,17 @@ class Othellier(object):
                 ligne = int(i * 7/2)
                 col = int(j * 7/2)
                 # est-il capturé 
-                if self.tablier[ligne,col] == -self.joueur : 
+                if self.tablier[ligne,col] == tour_joueur : 
                     # si oui par moi : 60
                     pscore += 100
                 #si il n'est pas capturé    
                 elif self.tablier[ligne,col] == 0 : 
                     # est ce que je suis dans les trois autour : -20 pour chaque
-                    if self.tablier[ligne + 1 - i,col] == -self.joueur : 
+                    if self.tablier[ligne + 1 - i,col] == tour_joueur : 
                         pscore -= 20
-                    if self.tablier[ligne,col + 1 - j] == -self.joueur : 
+                    if self.tablier[ligne,col + 1 - j] == tour_joueur : 
                         pscore -= 20
-                    if self.tablier[ligne + 1 - i,col + 1 - j] == -self.joueur : 
+                    if self.tablier[ligne + 1 - i,col + 1 - j] == tour_joueur : 
                         pscore -= 20
         return pscore
 
@@ -577,7 +577,7 @@ class Joueur(object):
             #On est donc un étage plus bas sur l'arbre que l'othellier initial (d'où prof-1)
             #On est sur un étage Max, le prochain sera donc un étage Min (d'où le -joueur et False)
             #score = fct.MinMax(son,self.prof-1,-self.couleur,False)
-            score = MinMax(son,self.prof-1,-self.couleur,False)
+            score = MinMax(son,self.prof-1,-self.couleur,False,self.couleur)
             #Ici, on cherche à maximiser le score du joueur, donc si le score dépasse le score max jusqu'à là :  
             # On change le best score et on retient le tablier du successeurs qui a ce nouveau score max
             if score > bestScore : 
@@ -614,7 +614,7 @@ class Joueur(object):
                 elif son.gagnant == -self.couleur : 
                     son.score = -1000
                 else:
-                    son.score = son.evaluate()
+                    son.score = son.evaluate(self.couleur)
             
                 if son.score > best_score:
                     best_score = son.score
@@ -632,7 +632,7 @@ class Joueur(object):
         beta = 100000000
         ppasse = False
         # On lance alpha-beta qui retourne le score de l'othellier cible vers lequel on doit aller
-        score_alpha_beta = AlphaBeta(othellier,self.prof,self.couleur,alpha,beta,True)
+        score_alpha_beta = AlphaBeta(othellier,self.prof,self.couleur,alpha,beta,True,self.couleur)
         print("score_alpha_beta",score_alpha_beta)
 
         # On détermine quel othellier jouer pour être sur la branche qui mène à l'othellier cible dont le score est score_alpha_beta
@@ -686,18 +686,18 @@ class Joueur(object):
 #Cette fonction va faire remonter le valeur d'une branche
 #Elle fonctionne par recursion jusqu'à atteindre soit la profondeur max d'exploration, soit un othellier terminal
 #La recursion alterne entre des étages min et des étages max
-def MinMax(othellier,prof,joueur,isMaximizing):
+def MinMax(othellier,prof,joueur,isMaximizing,joueur_origine):
     #Conditions d'arrêts et scores à remonter 
     #Si l'othellier est gagnant, on remonte un valeur très élevé 1000
-    if othellier.gagnant == joueur : 
+    if othellier.gagnant == joueur_origine : 
         return 1000
     #Si il est perdant, on remonte une valeur très faible -1000
-    if othellier.gagnant == -joueur : 
+    if othellier.gagnant == -joueur_origine : 
         return -1000
     #Si l'othellier n'est pas terminal, et que l'on a atteint la profondeur max: 
     # on s'arrête et on utilise la fonction d'evaluation pour connaitre le score à remonter
     if (prof == 0) : 
-        return (othellier.evaluate())
+        return (othellier.evaluate(joueur_origine))
 
     #Tant que l'on est dans aucun de ces cas : 
     #Si on est sur un noeud max 
@@ -706,7 +706,7 @@ def MinMax(othellier,prof,joueur,isMaximizing):
         #Pour chaque successeurs, on relance MinMax
         for son in othellier.liste_successeurs : 
             #On était sur un noeud max, les noeuds successeurs seront donc des noeuds min
-            score = MinMax(son,prof-1,-joueur,False) #recursion
+            score = MinMax(son,prof-1,-joueur,False,joueur_origine) #recursion
             #On remonte le score maximal
             if score > bestscore : 
                 bestscore = score
@@ -717,7 +717,7 @@ def MinMax(othellier,prof,joueur,isMaximizing):
         #Pour chaque successeurs, on relance MinMax
         for son in othellier.liste_successeurs : 
             #On était sur un noeud min, les noeuds successeurs seront donc des noeuds max
-            score = MinMax(son,prof-1,-joueur,True) #recursion
+            score = MinMax(son,prof-1,-joueur,True,joueur_origine) #recursion
             #On remonte le score minimal
             if score < bestscore: 
                 bestscore = score
@@ -728,14 +728,14 @@ def MinMax(othellier,prof,joueur,isMaximizing):
 #Cette fonction va faire remonter le valeur d'une branche --> on prendra le max pour choisir quoi jouer
 #Elle fonctionne par recursion jusqu'à atteindre soit la profondeur max d'exploration, soit un othellier terminal
 #La recursion alterne entre des étages min et des étages max
-def AlphaBeta(othellier,prof,joueur,alpha,beta,isMaximizing):
+def AlphaBeta(othellier,prof,joueur,alpha,beta,isMaximizing,joueur_origine):
 
     #Si l'othellier est gagnant, on remonte un valeur très élevé 1000
-    if othellier.gagnant == joueur :
+    if othellier.gagnant == joueur_origine :
         othellier.score = 1000
         return 1000
     #Si il est perdant, on remonte une valeur très faible -1000
-    if othellier.gagnant == -joueur : 
+    if othellier.gagnant == -joueur_origine : 
         othellier.score = -1000
         return -1000
 
@@ -743,14 +743,14 @@ def AlphaBeta(othellier,prof,joueur,alpha,beta,isMaximizing):
     # on s'arrête et on utilise la fonction d'evaluation pour connaitre le score à remonter
     # Le cas liste_succes == [] = l'oth n'a pas de succes mais n'est pas gagnant ou perdant car l'avdersaire peut jouer au coup d'après
     if (prof == 0) or (othellier.liste_successeurs == []): 
-        othellier.score = othellier.evaluate()
+        othellier.score = othellier.evaluate(joueur_origine)
         return othellier.score
 
     #Si on est sur un noeud max 
     if isMaximizing:
         #Pour chaque successeurs, on relance AlphaBeta
         for son in othellier.liste_successeurs :
-            alpha = max(alpha,AlphaBeta(son,prof-1,-joueur,alpha,beta,False))
+            alpha = max(alpha,AlphaBeta(son,prof-1,-joueur,alpha,beta,False,joueur_origine))
             if alpha >= beta : 
                 break
         return alpha
@@ -758,7 +758,7 @@ def AlphaBeta(othellier,prof,joueur,alpha,beta,isMaximizing):
     else: 
         #Pour chaque successeurs, on relance AlphaBeta
         for son in othellier.liste_successeurs :
-            beta = min(beta,AlphaBeta(son,prof-1,-joueur,alpha,beta,True))
+            beta = min(beta,AlphaBeta(son,prof-1,-joueur,alpha,beta,True,joueur_origine))
             if beta <= alpha:
                 break
         return beta
