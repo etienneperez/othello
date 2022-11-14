@@ -748,18 +748,31 @@ def AlphaBeta(othellier,prof,joueur,alpha,beta,isMaximizing,joueur_origine):
     if isMaximizing:
         #Pour chaque successeurs, on relance AlphaBeta
         for son in othellier.liste_successeurs :
-            alpha = max(alpha,AlphaBeta(son,prof-1,-joueur,alpha,beta,False,joueur_origine))
-            if alpha >= beta : 
-                break
+            # alpha = max(alpha,AlphaBeta(son,prof-1,-joueur,alpha,beta,False,joueur_origine))
+        #     if alpha >= beta : 
+        #         break
+        # return alpha
+            score = AlphaBeta(son,prof-1,-joueur,alpha,beta,False,joueur_origine)
+            if score > alpha:
+                alpha = score
+                if alpha >= beta:
+                    break
         return alpha
     #Si on est sur un noeud min
     else: 
         #Pour chaque successeurs, on relance AlphaBeta
         for son in othellier.liste_successeurs :
-            beta = min(beta,AlphaBeta(son,prof-1,-joueur,alpha,beta,True,joueur_origine))
-            if beta <= alpha:
-                break
+        #     beta = min(beta,AlphaBeta(son,prof-1,-joueur,alpha,beta,True,joueur_origine))
+        #     if beta <= alpha:
+        #         break
+        # return beta
+            score = AlphaBeta(son,prof-1,-joueur,alpha,beta,True,joueur_origine)
+            if score < beta:
+                beta = score
+                if alpha >= beta:
+                    break
         return beta
+
 
 def MCTS(othellier, prof, C, N,T): # j'ai mis N ici dans l'idée qu'on va mettre la fonction MCTS en boucle avec un N qui augmente en dehors de l'appel de fonction
     othelliers_choisis = [othellier]
@@ -1150,7 +1163,7 @@ def comparer_algorithmes(total_simulations,liste_IAtype = ['MinMax','MinMax'], l
 ### PROGRAMME TEST  pour faire nos matrices de performance, on le supprimera du code rendu ###
 ###########################
 
-matrice_resultats = comparer_algorithmes(20,["Hasard","MinMax"],[[5],[4]])
+matrice_resultats = comparer_algorithmes(100,["MinMax","AlphaBeta"],[[5],[5]])
 print(matrice_resultats)
 # np.savetxt("matrice_resultats.csv",matrice_resultats)
 
@@ -1158,7 +1171,6 @@ print(matrice_resultats)
 ###########################
 ### PROGRAMME PRINCIPAL  qu'on va rendre ###
 ###########################
-
 
 # global long
 # long = 80
