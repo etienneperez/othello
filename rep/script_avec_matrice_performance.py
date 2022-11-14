@@ -1,5 +1,3 @@
-import profile
-import ssl
 import numpy as np
 from math import *
 from tkinter import *
@@ -8,7 +6,6 @@ from tkinter import ttk
 from random import randint, random
 import copy as copy
 
-import fonction_annexe as fct
 
 class Othellier(object):
 
@@ -904,7 +901,7 @@ def simulation_n_parties():
 
 
 # Entrées : algorithme choisi, intervalles de paramètres : 
-def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,5],[1,2,3]], liste_MCTS_N = [[15,17],[19,22]],liste_MCTS_T = [[10,11],[12,13]],liste_MCTS_C = [[1,2],[2,3]]):
+def comparer_algorithmes(total_simulations,liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,5],[1,2,3]], liste_MCTS_N = [[15,17],[19,22]],liste_MCTS_T = [[10,11],[12,13]],liste_MCTS_C = [[1,2],[2,3]]):
     '''
     En fait faut donner 2 intervalles dans chaque paramètre d'entrée comme ça on parcourt que eux précisément
     '''
@@ -920,7 +917,7 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
                 nb_victoires = ["Victoires : ",float(0),float(0),float(0)] # Position 1 = joueur 1, position 2 = égalité, et position -1 = joueur -1.
                 
                 print("simulations prof1 prof2", i,j)
-                while nb_simulation < 101:
+                while nb_simulation < total_simulations:
                     print("simulation",nb_simulation)
                     partie_n = Partie(False,False,liste_IAtype, [i,j])
                     nb_victoires[partie_n.resultat] += 1 # on ajoute 1 victoire au gagnant
@@ -943,7 +940,7 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
             nb_victoires = ["Victoires : ",float(0),float(0),float(0)] # Position 1 = joueur 1, position 2 = égalité, et position -1 = joueur -1.
             
             print("simulations prof", i)
-            while nb_simulation < 201:
+            while nb_simulation < total_simulations:
                 print("simulation",nb_simulation)
                 partie_n = Partie(False,False,liste_IAtype, [i,1])
                 nb_victoires[partie_n.resultat] += 1 # on ajoute 1 victoire au gagnant
@@ -966,7 +963,7 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
             nb_victoires = ["Victoires : ",float(0),float(0),float(0)] # Position 1 = joueur 1, position 2 = égalité, et position -1 = joueur -1.
             
             print("simulations prof", i)
-            while nb_simulation < 201:
+            while nb_simulation < total_simulations:
                 print("simulation",nb_simulation)
                 partie_n = Partie(False,False,liste_IAtype, [1,i])
                 nb_victoires[partie_n.resultat] += 1 # on ajoute 1 victoire au gagnant
@@ -992,7 +989,7 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
                     nb_victoires = ["Victoires : ",float(0),float(0),float(0)] # Position 1 = joueur 1, position 2 = égalité, et position -1 = joueur -1.
                     
                     print("simulations N T C ", i,j,k)
-                    while nb_simulation < 6:
+                    while nb_simulation < total_simulations:
                         print("simulation",nb_simulation)
                         partie_n = Partie(False,False,liste_IAtype, [1,1],[i,0],[j,0],[k,0])
                         nb_victoires[partie_n.resultat] += 1 # on ajoute 1 victoire au gagnant
@@ -1019,7 +1016,7 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
                     nb_victoires = ["Victoires : ",float(0),float(0),float(0)] # Position 1 = joueur 1, position 2 = égalité, et position -1 = joueur -1.
                     
                     print("simulations N T C ", i,j,k)
-                    while nb_simulation < 6:
+                    while nb_simulation < total_simulations:
                         print("simulation",nb_simulation)
                         partie_n = Partie(False,False,liste_IAtype, [1,1],[0,i],[0,j],[0,k])
                         nb_victoires[partie_n.resultat] += 1 # on ajoute 1 victoire au gagnant
@@ -1047,7 +1044,7 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
                         nb_victoires = ["Victoires : ",float(0),float(0),float(0)] # Position 1 = joueur 1, position 2 = égalité, et position -1 = joueur -1.
                         
                         print("simulations N T C N prof", i,j,k,l)
-                        while nb_simulation < 6:
+                        while nb_simulation < total_simulations:
                             print("simulation",nb_simulation)
                             partie_n = Partie(False,False,liste_IAtype, [1,l],[i,0],[j,0],[k,0])
                             nb_victoires[partie_n.resultat] += 1 # on ajoute 1 victoire au gagnant
@@ -1077,7 +1074,7 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
                         nb_victoires = ["Victoires : ",float(0),float(0),float(0)] # Position 1 = joueur 1, position 2 = égalité, et position -1 = joueur -1.
                         
                         print("simulations N T C N prof", i,j,k,l)
-                        while nb_simulation < 6:
+                        while nb_simulation < total_simulations:
                             print("simulation",nb_simulation)
                             partie_n = Partie(False,False,liste_IAtype, [l,1],[0,i],[0,j],[0,k])
                             nb_victoires[partie_n.resultat] += 1 # on ajoute 1 victoire au gagnant
@@ -1110,7 +1107,7 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
                                 nb_victoires = ["Victoires : ",float(0),float(0),float(0)] # Position 1 = joueur 1, position 2 = égalité, et position -1 = joueur -1.
                                 
                                 print("simulations N1 T1 C1 N2 T2 C2", i,j,k,l,m,n)
-                                while nb_simulation < 6:
+                                while nb_simulation < total_simulations:
                                     print("simulation",nb_simulation)
                                     partie_n = Partie(False,False,liste_IAtype, [1,1],[i,l],[j,m],[k,n])
                                     nb_victoires[partie_n.resultat] += 1 # on ajoute 1 victoire au gagnant
@@ -1135,9 +1132,9 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
 ### PROGRAMME TEST  pour faire nos matrices de performance, on le supprimera du code rendu ###
 ###########################
 
-matrice_resultats = comparer_algorithmes(["Hasard","AlphaBeta"],[[1],[3]])
+matrice_resultats = comparer_algorithmes(["Hasard","MinMax"],[[1,2],[1,2]])
 print(matrice_resultats)
-# np.savetxt("matrice_resultats.csv",matrice_resultats)
+np.savetxt("matrice_resultats.csv",matrice_resultats)
 
 
 ###########################
