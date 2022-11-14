@@ -633,7 +633,7 @@ class Joueur(object):
         ppasse = False
         # On lance alpha-beta qui retourne le score de l'othellier cible vers lequel on doit aller
         score_alpha_beta = AlphaBeta(othellier,self.prof,self.couleur,alpha,beta,True,self.couleur)
-        print("score_alpha_beta",score_alpha_beta)
+        # print("score_alpha_beta",score_alpha_beta)
 
         # On détermine quel othellier jouer pour être sur la branche qui mène à l'othellier cible dont le score est score_alpha_beta
         liste_othelliers_score_egal = []
@@ -651,7 +651,7 @@ class Joueur(object):
                         for successeur_de_successeur in successeur.liste_successeurs:
                             liste_successeurs_prof_i_plus_1.append(successeur_de_successeur)
                 liste_successeurs_prof_i = liste_successeurs_prof_i_plus_1.copy()
-        print("score_alpha_beta",score_alpha_beta)
+        # print("score_alpha_beta",score_alpha_beta)
         choix = randint(0,len(liste_othelliers_score_egal)-1)
         return Othellier(self.prof_adv,-self.couleur,liste_othelliers_score_egal[choix][0],liste_othelliers_score_egal[choix][1])
 
@@ -943,7 +943,7 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
             nb_victoires = ["Victoires : ",float(0),float(0),float(0)] # Position 1 = joueur 1, position 2 = égalité, et position -1 = joueur -1.
             
             print("simulations prof", i)
-            while nb_simulation < 101:
+            while nb_simulation < 201:
                 print("simulation",nb_simulation)
                 partie_n = Partie(False,False,liste_IAtype, [i,1])
                 nb_victoires[partie_n.resultat] += 1 # on ajoute 1 victoire au gagnant
@@ -959,14 +959,14 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
         return resultats
 
     elif liste_IAtype[0] == "Hasard" and liste_IAtype[1] in ["MinMax","AlphaBeta"]:
-        resultats = np.zeros((len(liste_prof[0]),4))
+        resultats = np.zeros((len(liste_prof[1]),4))
         ligne = 0
         for i in liste_prof[1]:
             nb_simulation = 1
             nb_victoires = ["Victoires : ",float(0),float(0),float(0)] # Position 1 = joueur 1, position 2 = égalité, et position -1 = joueur -1.
             
             print("simulations prof", i)
-            while nb_simulation < 101:
+            while nb_simulation < 201:
                 print("simulation",nb_simulation)
                 partie_n = Partie(False,False,liste_IAtype, [1,i])
                 nb_victoires[partie_n.resultat] += 1 # on ajoute 1 victoire au gagnant
@@ -1010,7 +1010,7 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
 
     elif liste_IAtype[0] == "Hasard" and liste_IAtype[1] == "MCTS":
         # col 1 = prof J1, col 2 = prof J2, col 3 = nb vic J1, col 4 = nb vic J2, col 5 = nb égalités
-        resultats = np.zeros((len(liste_MCTS_N[0])*len(liste_MCTS_T[0])*len(liste_MCTS_C[0]),6))
+        resultats = np.zeros((len(liste_MCTS_N[1])*len(liste_MCTS_T[1])*len(liste_MCTS_C[1]),6))
         ligne = 0
         for i in liste_MCTS_N[1]:
             for j in liste_MCTS_T[1]:
@@ -1098,7 +1098,7 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
 
     elif liste_IAtype[0] == "MCTS" and liste_IAtype[1] == "MCTS":
         # col 1 = prof J1, col 2 = prof J2, col 3 = nb vic J1, col 4 = nb vic J2, col 5 = nb égalités
-        resultats = np.zeros((len(liste_MCTS_N[0])*len(liste_MCTS_T[0])*len(liste_MCTS_C[0])*len(liste_prof[1]),7))
+        resultats = np.zeros((len(liste_MCTS_N[0])*len(liste_MCTS_T[0])*len(liste_MCTS_C[0])*len(liste_MCTS_N[1])*len(liste_MCTS_T[1])*len(liste_MCTS_C[1]),9))
         ligne = 0
         for i in liste_MCTS_N[0]:
             for j in liste_MCTS_T[0]:
@@ -1135,12 +1135,9 @@ def comparer_algorithmes(liste_IAtype = ['MinMax','MinMax'], liste_prof = [[3,4,
 ### PROGRAMME TEST  pour faire nos matrices de performance, on le supprimera du code rendu ###
 ###########################
 
-matrice_resultats = comparer_algorithmes(["MinMax","Hasard"],[[2],[2]])
+matrice_resultats = comparer_algorithmes(["Hasard","AlphaBeta"],[[1],[3]])
 print(matrice_resultats)
-# marche pas avec prof 1 alpha et min
-
-
-
+# np.savetxt("matrice_resultats.csv",matrice_resultats)
 
 
 ###########################

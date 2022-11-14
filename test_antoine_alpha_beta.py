@@ -35,8 +35,9 @@ class Othellier(object):
                 elif self.tablier[i,j] == -1:
                     couleur = "black"
                 else:
-                    couleur = "grey"
-                canvas.create_rectangle(10+i*long, 10+j*long, 10+(i+1)*long, 10+(j+1)*long, fill = couleur)
+                    couleur = "green"
+                canvas.create_rectangle(10+i*long, 10+j*long, 10+(i+1)*long, 10+(j+1)*long, fill = "green")
+                canvas.create_oval(10+i*long +long/7, 10+j*long +long/7, 10+(i+1)*long -long/7, 10+(j+1)*long -long/7, fill = couleur, outline = "green")
                 j += 1
             i += 1
 
@@ -493,28 +494,28 @@ def game(prof):
     print(liste_othellier_partie[i].gagnant)
 
 ####Test######
-game(3)
+# game(3)
 
 
 
 ### Test affichage ####
-# tablier_0 = np.array([[0 for i in range (8)] for j in range (8)])
-# tablier_0[3,3] = 1
-# tablier_0[4,4] = 1
-# tablier_0[3,4] = -1
-# tablier_0[4,3] = -1
-# #On commence par le joueur 1, c'est arbitraire
-# othellier_0 = Othellier(3,1,tablier_0)
+tablier_0 = np.array([[0 for i in range (8)] for j in range (8)])
+tablier_0[3,3] = 1
+tablier_0[4,4] = 1
+tablier_0[3,4] = -1
+tablier_0[4,3] = -1
+#On commence par le joueur 1, c'est arbitraire
+othellier_0 = Othellier(3,1,tablier_0)
 
-# long = 70 # taille d'1 carreau de l'othellier
+long = 70 # taille d'1 carreau de l'othellier
 
-# fenetre = tk.Tk()
-# fenetre.configure(height = 10*long, width = 10*long) # On laisse une marge de 3*long autour du tablier
+fenetre = tk.Tk()
+fenetre.configure(height = 10*long, width = 10*long) # On laisse une marge de 3*long autour du tablier
 
-# canvas = tk.Canvas(fenetre, width=10*long, height=10*long, background='white')
+canvas = tk.Canvas(fenetre, width=10*long, height=10*long, background='white')
 
 
-# othellier_0.afficher(canvas,long)
+othellier_0.afficher(canvas,long)
 
-# canvas.pack()
-# fenetre.mainloop()
+canvas.pack()
+fenetre.mainloop()
