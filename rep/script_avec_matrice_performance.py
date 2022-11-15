@@ -1163,7 +1163,7 @@ def comparer_algorithmes(total_simulations,liste_IAtype = ['MinMax','MinMax'], l
 ### PROGRAMME TEST  pour faire nos matrices de performance, on le supprimera du code rendu ###
 ###########################
 
-matrice_resultats = comparer_algorithmes(100,["MinMax","AlphaBeta"],[[5],[5]])
+matrice_resultats = comparer_algorithmes(35,["Hasard","MinMax"],[[5],[5]])
 print(matrice_resultats)
 # np.savetxt("matrice_resultats.csv",matrice_resultats)
 
