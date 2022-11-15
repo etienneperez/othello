@@ -10,7 +10,7 @@ import time
 
 class Othellier(object):
 
-    def __init__(self, prof,joueur,tablier, passe = FALSE):#,score = 0 ):
+    def __init__(self, prof,joueur,tablier, passe = FALSE,isMCTS = False):#,score = 0 ):
         self.prof = prof #profondeur restante à explorer
         self.joueur = joueur # 1 ou -1
         self.tablier = tablier # matrice 8x8 remplie de 1, de -1 et de 0 (cases vides)
@@ -18,7 +18,9 @@ class Othellier(object):
         self.liste_coord_successeurs = [] # liste des coordonnées de la case jouée pour chacun des successeurs
         self.gagnant = 0
         self.precedent_passe = passe
-        self.successeurs_bis() # lance la méthode successeurs qui remplie les listes successeurs. 
+        self.isMCTS = isMCTS
+        if not isMCTS : 
+            self.successeurs_bis() # lance la méthode successeurs qui remplie les listes successeurs. 
                                 # Cette méthode est donc automatiquement appelée lorsqu'un othellier est crée. 
         #self.successeurs() #idem avec l'autre version de la méthode successeurs
         self.score = -1000000 # utile dans alpha-beta pour retrouver quel othellier a telle valeur d'alpha
@@ -55,8 +57,13 @@ class Othellier(object):
     def successeurs_bis(self): 
 
         # On vérifie si on a atteint la profondeur maximum. Si c'est le cas, il faut arrêter la recherche de successeurs.
+        if self.isMCTS : 
+            prof = 1
         # L'idée étant que l'on ne veut pas explorer tout l'arbre. 
-        if self.prof > 0 : 
+        else : 
+            prof = self.prof
+
+        if prof > 0 : 
 
             # Parcours (jsp écrire) du tablier pour trouver les cases vides
             for l in range(8):
@@ -229,12 +236,12 @@ class Othellier(object):
                             # L'othellier que l'on crée à donc un profondeur à explorer plus faible (d'où le prof-1), et ce sera le tour de l'autre joueur (d'où le -self.joueur)
                             # On remarque que lorsque l'on va crée cet Othellier, il va aussi appeler cette méthode pour aller chercher ses successeurs. 
                             # Et si il en a, ses successeurs vont eux même appelé cette méthode et ainsi de suite jusqu'à la profondeur max ou jusqu'à atteindre des othelliers terminaux (gagnant ou perdant) 
-                            self.liste_successeurs.append(Othellier(self.prof-1,-self.joueur,tablier_local))
+                            self.liste_successeurs.append(Othellier(self.prof-1,-self.joueur,tablier_local,isMCTS= self.isMCTS))
                         #Si la case n'était pas accessible/jouable, rien n'est ajouté aux listes successeurs
             
             # Si pas de successeurs, alors le joueur passe son tour = il joue ce même othellier et on change joueur
             if self.liste_successeurs == [] and not self.precedent_passe : 
-                self.liste_successeurs = [Othellier(self.prof-1,-self.joueur,self.tablier,TRUE)]
+                self.liste_successeurs = [Othellier(self.prof-1,-self.joueur,self.tablier,TRUE,isMCTS= self.isMCTS)]
             # Si pas de successeur, et que le joueur adverse avait déjà passé avant = partie finie
             if self.liste_successeurs == [] and self.precedent_passe : 
                 self.isGagnant()
@@ -373,9 +380,8 @@ class Partie(object):
             MCTS_T_joueur_2 = MCTS_T_2.get()
             MCTS_C_joueur_1 = MCTS_C_1.get()
             MCTS_C_joueur_2 = MCTS_C_2.get()
-
-            joueur1 = Joueur(1, IA = (type_joueur_1 == "machine"),IAtype = IAtype_joueur_1, prof = prof_joueur_1, prof_adv = prof_joueur_2, MCTS_N = MCTS_N_joueur_1, MCTS_T = MCTS_T_joueur_1, MCTS_C = MCTS_C_joueur_1)
-            joueur2 = Joueur(-1, IA = (type_joueur_2 == "machine"),IAtype = IAtype_joueur_2, prof = prof_joueur_2, prof_adv = prof_joueur_1, MCTS_N = MCTS_N_joueur_2, MCTS_T = MCTS_T_joueur_2, MCTS_C = MCTS_C_joueur_2)
+            joueur1 = Joueur(1, IA = (type_joueur_1 == "machine"),IAtype = IAtype_joueur_1, prof = prof_joueur_1, prof_adv = prof_joueur_2, MCTS_N = MCTS_N_joueur_1, MCTS_T = MCTS_T_joueur_1, MCTS_C = MCTS_C_joueur_1,advisMCTS=(IAtype_joueur_2 == 'MCTS'))
+            joueur2 = Joueur(-1, IA = (type_joueur_2 == "machine"),IAtype = IAtype_joueur_2, prof = prof_joueur_2, prof_adv = prof_joueur_1, MCTS_N = MCTS_N_joueur_2, MCTS_T = MCTS_T_joueur_2, MCTS_C = MCTS_C_joueur_2,advisMCTS=(IAtype_joueur_1 == 'MCTS'))
 
             # self.player1prof = prof_joueur_1
 
@@ -384,8 +390,8 @@ class Partie(object):
 
         #Si il n'y a pas d'affichage, les informations sur les deux joueurs sont directement dans la création de l'instance partie grace aux attribut list_IAtype, list_prof et list_nb_simul_MCTS
         else : 
-            self.joueurs.append(Joueur(1,True,self.list_IAtype[0],self.list_prof[0],self.list_prof[1],self.list_MCTS_N[0],self.list_MCTS_T[0],self.list_MCTS_C[0]))
-            self.joueurs.append(Joueur(-1,True,self.list_IAtype[1],self.list_prof[1],self.list_prof[0],self.list_MCTS_N[1],self.list_MCTS_T[1],self.list_MCTS_C[1]))
+            self.joueurs.append(Joueur(1,True,self.list_IAtype[0],self.list_prof[0],self.list_prof[1],self.list_MCTS_N[0],self.list_MCTS_T[0],self.list_MCTS_C[0],advisMCTS=(self.list_IAtype[1] == 'MCTS')))
+            self.joueurs.append(Joueur(-1,True,self.list_IAtype[1],self.list_prof[1],self.list_prof[0],self.list_MCTS_N[1],self.list_MCTS_T[1],self.list_MCTS_C[1],advisMCTS=(self.list_IAtype[0] == 'MCTS')))
 
     
     def afficher_gagnant(self):
@@ -520,7 +526,7 @@ class Partie(object):
 
 class Joueur(object):
 
-    def __init__(self,couleur = 1,IA = True,IAtype = 'MinMax', prof = 1,prof_adv = 1,MCTS_N =50,MCTS_T = 3,MCTS_C = 2):
+    def __init__(self,couleur = 1,IA = True,IAtype = 'MinMax', prof = 1,prof_adv = 1,MCTS_N =50,MCTS_T = 3,MCTS_C = 2,advisMCTS = False):
         self.couleur = couleur #Joueur 1 ou joueur -1
         self.IA = IA #Boléen pour savoir si c'est un joueur IA (true) ou un vrai joueur (false)
         self.IAtype = IAtype #Si c'est un IA, quel type d'IA : MinMax, AlphaBeta, MCTS (MinMax par défaut)
@@ -529,6 +535,7 @@ class Joueur(object):
         self.MCTS_N = MCTS_N #Si c'est un IA MCTS, le nombre de simulation (50 par défaut)
         self.MCTS_T = MCTS_T
         self.MCTS_C = MCTS_C
+        self.advisMCTS = advisMCTS
 
     #Méthode prenant en entrée un othellier et donnant en sortant l'othellier une fois que le joueur a joué 
     def jouer(self,othellier):
@@ -550,7 +557,7 @@ class Joueur(object):
     def jouerHasard(self,othellier):
 
         choix = randint(0,len(othellier.liste_successeurs)-1)
-        return Othellier(self.prof_adv,-self.couleur,othellier.liste_successeurs[choix].tablier,othellier.liste_successeurs[choix].precedent_passe)
+        return Othellier(self.prof_adv,-self.couleur,othellier.liste_successeurs[choix].tablier,othellier.liste_successeurs[choix].precedent_passe,self.advisMCTS)
 
 
     #Prend en entrée un othellier, la profondeur max d'exploration et le joueur qui joue 
@@ -560,7 +567,7 @@ class Joueur(object):
         # Pour gérer le cas où il n'y a qu'1 seul successeur possible on le joue direct
         # Gère aussi le cas où celui d'avant a precedent_passe = True --> la partie va se finir car il a gagnant = 1 ou -1
         if len(othellier.liste_successeurs) == 1:
-            return Othellier (self.prof_adv,-self.couleur,othellier.liste_successeurs[0].tablier,othellier.liste_successeurs[0].precedent_passe)
+            return Othellier (self.prof_adv,-self.couleur,othellier.liste_successeurs[0].tablier,othellier.liste_successeurs[0].precedent_passe,self.advisMCTS)
 
         #On initialise le score max à une valeur très basse
         bestScore = -10000
@@ -588,7 +595,7 @@ class Joueur(object):
         # Idée = on a la double info de ppasse et de prof.
         # Car si on retourne un successeur, perd de la prof au fur et à mesure des tours
         choix = randint(0,len(bestMove)-1)
-        return Othellier(self.prof_adv,-self.couleur,bestMove[choix],ppasse[choix])
+        return Othellier(self.prof_adv,-self.couleur,bestMove[choix],ppasse[choix],self.advisMCTS)
 
 
     def jouerAlphaBeta(self,othellier):
@@ -596,7 +603,7 @@ class Joueur(object):
         # Pour gérer le cas où il n'y a qu'1 seul successeur possible on le joue direct
         # Gère aussi le cas où celui d'avant a precedent_passe = True --> la partie va se finir car il a gagnant = 1 ou -1
         if len(othellier.liste_successeurs) == 1:
-            return Othellier (self.prof_adv,-self.couleur,othellier.liste_successeurs[0].tablier,othellier.liste_successeurs[0].precedent_passe)
+            return Othellier (self.prof_adv,-self.couleur,othellier.liste_successeurs[0].tablier,othellier.liste_successeurs[0].precedent_passe,self.advisMCTS)
 
         # Pour gérer le cas où prof = 1 --> on retourne juste le max des successeurs
         if self.prof == 1:
@@ -623,7 +630,7 @@ class Joueur(object):
                     ppasse.append(son.precedent_passe)
 
             choix = randint(0,len(bestMove)-1)
-            return Othellier(self.prof_adv,-self.couleur,bestMove[choix],ppasse[choix])
+            return Othellier(self.prof_adv,-self.couleur,bestMove[choix],ppasse[choix],self.advisMCTS)
 
         # Initialisation de alpha et beta
         alpha = -100000000
@@ -651,7 +658,7 @@ class Joueur(object):
                 liste_successeurs_prof_i = liste_successeurs_prof_i_plus_1.copy()
         # print("score_alpha_beta",score_alpha_beta)
         choix = randint(0,len(liste_othelliers_score_egal)-1)
-        return Othellier(self.prof_adv,-self.couleur,liste_othelliers_score_egal[choix][0],liste_othelliers_score_egal[choix][1])
+        return Othellier(self.prof_adv,-self.couleur,liste_othelliers_score_egal[choix][0],liste_othelliers_score_egal[choix][1],self.advisMCTS)
 
     def jouerMCTS(self,othellier):
 
@@ -677,7 +684,7 @@ class Joueur(object):
             bestScore = score_max
             bestMove = othellier.liste_successeurs[where_score_max].tablier
             ppasse = othellier.liste_successeurs[-1].precedent_passe
-        return Othellier(self.prof_adv, -self.couleur, bestMove, ppasse)
+        return Othellier(self.prof_adv, -self.couleur, bestMove, ppasse,self.advisMCTS)
     
 
 ##########Fonction MinMax#################
@@ -1163,6 +1170,9 @@ def comparer_algorithmes(total_simulations,liste_IAtype = ['MinMax','MinMax'], l
 ### PROGRAMME TEST  pour faire nos matrices de performance, on le supprimera du code rendu ###
 ###########################
 
+matrice_resultats = comparer_algorithmes(200,["MinMax","Hasard"],[[4],[1]])
+print(matrice_resultats)
+# np.savetxt("matrice_resultats.csv",matrice_resultats)
 matrice_resultats = comparer_algorithmes(100,["MinMax","AlphaBeta"],[[5],[5]])
 print(matrice_resultats)
 # np.savetxt("matrice_resultats.csv",matrice_resultats)
