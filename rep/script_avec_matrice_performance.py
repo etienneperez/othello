@@ -660,32 +660,43 @@ class Joueur(object):
         choix = randint(0,len(liste_othelliers_score_egal)-1)
         return Othellier(self.prof_adv,-self.couleur,liste_othelliers_score_egal[choix][0],liste_othelliers_score_egal[choix][1],self.advisMCTS)
 
-    def jouerMCTS(self,othellier):
-
-        #On initialise le score max à une valeur très basse
+    def jouerMCTS(self, othellier):
+        # On initialise le score max à une valeur très basse
         bestScore = -10000
-        #On initialise le tablier de sortie comme on veut
-        bestMove = np.array([[0 for i in range (8)] for j in range (8)])
+        # On initialise le tablier de sortie comme on veut
+        bestMove = np.array([[0 for i in range(8)] for j in range(8)])
+        othellier_MCTS = Othellier(1, othellier.joueur, othellier.tablier, othellier.precedent_passe, isMCTS=TRUE)
+        for N in range(1, self.MCTS_N+1):  # on fait N fois le processus de MCTS
+            MCTS(othellier_MCTS, self.MCTS_C, N, self.MCTS_T)
 
-        for N in range(1,self.MCTS_T+1): # on fait T fois le processus de MCTS
-            #fct.MCTS(othellier, self.prof, self.MCTS_C, N) #ajouter en paramétre N, nombre de simulations, MCTS_N
-            MCTS(othellier, self.prof, self.MCTS_C, N, self.MCTS_T) #ajouter en paramétre N, nombre de simulations, MCTS_N
-
-        
         ppasse = FALSE
-        #On va parcourir les successeurs de l'othellier actuel
-        #C'est un de ces successeurs que l'on va choisir, il faut donc les évaluer
-        scores = [sons.t for sons in othellier.liste_successeurs]
-        score_max = max(scores)
-        where_score_max = np.argmax(scores)
-        #Ici, on cherche à maximiser le score du joueur, donc si le score dépasse le score max jusqu'à là :  
-        # On change le best score et on retient le tablier du successeurs qui a ce nouveau score max
-        if score_max > bestScore : 
-            bestScore = score_max
-            bestMove = othellier.liste_successeurs[where_score_max].tablier
-            ppasse = othellier.liste_successeurs[-1].precedent_passe
-        return Othellier(self.prof_adv, -self.couleur, bestMove, ppasse,self.advisMCTS)
-    
+        # On va parcourir les successeurs de l'othellier actuel
+        # C'est un de ces successeurs que l'on va choisir, il faut donc les évaluer
+        # Calcul des UCB des successeurs      
+        if othellier_MCTS.liste_successeurs != []:
+            scores = []
+            for successeur in othellier_MCTS.liste_successeurs:
+                if successeur.n != 0:
+                    scores.append(successeur.t/successeur.n + self.MCTS_C *
+                                np.sqrt(np.log(self.MCTS_N)/successeur.n))  # calcul de l'UCB
+                else:  # le noeud n'a jamais été visité, son score vaut t = 100000
+                    scores.append(successeur.t)
+            score_max = max(scores)
+
+            # liste des indices d'où se trouve le maximum dans liste_scores_successeurs
+            liste_argmax = [i for i, j in enumerate(scores) if j == score_max]
+            size_score_max = len(liste_argmax)            
+            bestScore = liste_argmax[randint(0, size_score_max-1)]
+            # Ici, on cherche à maximiser le score du joueur, donc si le score dépasse le score max jusqu'à là :
+            # On change le best score et on retient le tablier du successeurs qui a ce nouveau score max
+            bestMove = othellier_MCTS.liste_successeurs[bestScore].tablier
+            ppasse = othellier_MCTS.liste_successeurs[bestScore].precedent_passe
+        else:
+            bestMove = othellier_MCTS.tablier
+            ppasse = othellier_MCTS.precedent_passe
+            couleur = -self.couleur
+        return Othellier(self.prof_adv, -self.couleur, bestMove, ppasse, isMCTS=FALSE)
+
 
 ##########Fonction MinMax#################
 #Cette fonction va faire remonter le valeur d'une branche
@@ -781,112 +792,135 @@ def AlphaBeta(othellier,prof,joueur,alpha,beta,isMaximizing,joueur_origine):
         return beta
 
 
-def MCTS(othellier, prof, C, N,T): # j'ai mis N ici dans l'idée qu'on va mettre la fonction MCTS en boucle avec un N qui augmente en dehors de l'appel de fonction
-    othelliers_choisis = [othellier]
-    while othelliers_choisis[-1].n > 1: # tant qu'on est sur un othellier qui a été visité AU MOINS 2 fois donc qui a au moins eu une expansion
-        othellier_pere = othellier 
-        othellier_pere.n += 1
-            
+def MCTS(othellier, C, N, T):  # j'ai mis N ici dans l'idée qu'on va mettre la fonction MCTS en boucle avec un N qui augmente en dehors de l'appel de fonction
+    othelliers_choisis = [othellier] # on retient l'othellier d'entrée qui est l'othellier racine
+    joueur_principal = othellier.joueur # on retient également le joueur d'entrée car c'est par rapport à lui qu'on va calculer les scores
+    # tant qu'on est sur un othellier qui a été visité AU MOINS 1 fois donc qui a au moins eu une expansion
+    othellier_pere = othellier
+    while othelliers_choisis[-1].n > 1 and othelliers_choisis[-1].liste_successeurs != []:
+
         # là on va regarder les valeurs d'UCB des successeurs, mais s'ils n'ont pas été visité leur t vaudra 10000 donc on vérifie
         # si plusieurs n'ont pas été visités ils auront forcément tous des valeurs d'UCB infinie donc on prendra au hasard parmi ceux encore non visités
-        # s'ils ont tous été visités on prend la valeur max des UCB 
-        
-        ######## SELECTION et EXPANSION #########
+        # s'ils ont tous été visités on prend la valeur max des UCB
 
-        ## cette liste permet pour chaque othellier visité de sélectionner son successeur le plus prometteur
+        ######## SELECTION #########
+
+        # cette liste permet pour chaque othellier visité de sélectionner son successeur le plus prometteur
         # construction de la liste
         liste_scores_successeurs = []
-        for successeur in othellier_pere.liste_successeurs: # parmi les successeurs de l'othellier père
-            if successeur.n != 0: # si le noeud successeur a été vu au moins une fois 
-                liste_scores_successeurs.append(successeur.t/successeur.n + C * np.sqrt(np.log(N)/successeur.n)) # calcul de l'UCB
-            else: # le noeud n'a jamais été visité, son score vaut t = 100000
+        for successeur in othellier_pere.liste_successeurs:  # parmi les successeurs de l'othellier père
+            if successeur.n != 0:  # si le noeud successeur a été vu au moins une fois
+                liste_scores_successeurs.append(successeur.t/successeur.n + C * np.sqrt(np.log(N)/successeur.n))  # calcul de l'UCB
+            else:  # le noeud n'a jamais été visité, son score vaut t = 100000
                 liste_scores_successeurs.append(successeur.t)
-            
-        if liste_scores_successeurs == []: # en fin de partie pour éviter une erreur
-            return("Fin de partie")
-        
+
         # choix du successeur le plus prometteur
-        else:
-            score_max = max([scores for scores in liste_scores_successeurs]) # sélection du score le plus élevé
+        # sélection du score le plus élevé
+        score_max = max([scores for scores in liste_scores_successeurs])
 
-            # ce score peut apparaître plusieurs fois, si oui on veut choisir au hasard parmi ces différentes occurences 
-            # ce qui revient à choisir un successeur au hasard parmi les plus prometteurs
+        # ce score peut apparaître plusieurs fois, si oui on veut choisir au hasard parmi ces différentes occurences
+        # ce qui revient à choisir un successeur au hasard parmi les plus prometteurs
 
-            liste_argmax = [i for i, j in enumerate(liste_scores_successeurs) if j == score_max] 
-                    # liste des indices d'où se trouve le maximum dans liste_scores_successeurs
-            nb_max = len(liste_argmax) 
-                    # on va choisir au hasard un indice dans cette liste pour récupérer un des maximum (s'il y en a plusieurs)
-            successeur_choisi = liste_argmax[randint(0,nb_max-1)]   # retourne un indice d'UCB le plus élevé, les successeurs 
-                                                                    # étant parcourus dans l'ordre on sait à quel successeur ça correspond
-            othellier_choisi = othellier_pere.liste_successeurs[successeur_choisi]
-            othelliers_choisis.append(othellier_choisi) # ajouté à la liste des othelliers visités
+        liste_argmax = [i for i, j in enumerate(liste_scores_successeurs) if j == score_max]
+        # liste des indices d'où se trouve le maximum dans liste_scores_successeurs
+        nb_max = len(liste_argmax)
 
-            # l'othellier successeur choisi est construit comme un nouvel othellier dont on recalcule les successeurs sur 1 profondeur pour l'adversaire
-            othellier = Othellier(1, -othellier_choisi.joueur, othellier_choisi.tablier, othellier_choisi.precedent_passe)
+        # on va choisir au hasard un indice dans cette liste pour récupérer un des maximum (s'il y en a plusieurs)
+        # retourne un indice d'UCB le plus élevé, les successeurs
+        successeur_choisi = liste_argmax[randint(0, nb_max-1)]
+        # étant parcourus dans l'ordre on sait à quel successeur ça correspond
+        othellier_choisi = othellier_pere.liste_successeurs[successeur_choisi]
+        # ajouté à la liste des othelliers visités
+        othelliers_choisis.append(othellier_choisi)
 
-     # en sortie de boucle on est donc soit sur un othellier qui n'a jamais été visité (n=0) et donc fait une simulation
-     # soit un othellier visité une fois qui a été le résultat d'une expansion
+        # l'othellier successeur choisi est construit comme un nouvel othellier dont on recalcule les successeurs sur 1 profondeur pour l'adversaire
+        othellier_choisi.isMCTS=TRUE
+        othellier_choisi.liste_successeurs = []
+        othellier_choisi.successeurs_bis()
+        othellier_pere = othellier_choisi
+
 
     othellier_joue = othelliers_choisis[-1]
-    joueur = othellier_joue.joueur # maintenant qu'on sait de quel othellier on part on sait qui joue et on peut lancer la partie aléatoire
+    othellier_joue.isMCTS = TRUE # pour pouvoir actualiser la liste de successeurs sans recréer d'othellier
+    othellier_joue.liste_successeurs = [] # il se peut que liste_successeurs soit d'office = ['profmax'] donc on la vide au cas où
 
-    ########## SIMULATION ##########
-    for simu_aleatoire in range(T):
-        othellier_final = simulation_MCTS(othellier_joue, 1, joueur)    
+    othellier_joue.successeurs_bis() # création des successeurs du dernier othellier de l'arbre mcts
+    
+    # en sortie de boucle on est donc soit sur un othellier qui n'a jamais été visité (n=0) et donc fait une expansion
 
-    ########## RETRO PROPAGATION jusqu'à l'othellier duquel est parti le MCTS ##########
+    ######## EXPANSION #########
+    if othellier_joue.liste_successeurs != []:
+        othellier_expansion = othellier_joue.liste_successeurs[randint(0, len(othellier_joue.liste_successeurs)-1)]
 
-    # ici on considère que si la partie est gagnée pour le joueur 1, l'othellier duquel est parti la simulation voit son score t actualisé
-    # une partie gagnée = un score t incrémenté de 1
-    # à l'inverse, une partie perdue = un score t qui diminue de 1
+        # maintenant qu'on sait de quel othellier on part on sait qui joue et on peut lancer la partie aléatoire
+        joueur_expansion = othellier_expansion.joueur
 
-    # actualisation de n pour le noeud joué
-        othellier_joue.n += 1
+        ########## SIMULATION ##########
+        for simu_aleatoire in range(T):
+            othellier_final = simulation_MCTS(
+                othellier_expansion, joueur_expansion)
 
-    # actualisation de t pour le noeud joué
-        if othellier_final.gagnant == joueur: # si ce joueur gagne la partie
-            score = 1
-            if othellier_joue.t == 10000: # si le noeud est visité pour la première fois, son score initial est de 10000
-                othellier_joue.t = score # l'othellier duquel le jeu est parti prend 1
-            else:
-                othellier_joue.t += score 
-        elif othellier_final.gagnant == 2: # en cas d'égalité
-            score = 0
-        elif othellier_final.gagnant == -joueur:
-            score = -1
-            if othellier_joue.t == 10000:
-                othellier_joue.t = score
-            else:
-                othellier_joue.t += score # en cas de défaite
+        ########## RETRO PROPAGATION ##########
 
-    # maintenant on veut faire remonter l'information sur la victoire/défaite après la partie aléatoire grâce à la liste othelliers_choisis
+        # ici on considère que si la partie est gagnée pour le joueur 1, l'othellier duquel est parti la simulation voit son score t actualisé
+        # une partie gagnée = un score t incrémenté de 1
+        # à l'inverse, une partie perdue = un score t qui diminue de 1
 
-    del(othelliers_choisis[-1]) # on a déjà actualisé les valeurs de l'othellier sur lequel on a joué
+        # actualisation de n pour le noeud joué
+            othellier_expansion.n += 1
 
-    for othellier in othelliers_choisis:
-        othellier.n += 1
-        if othellier.t == 10000:
-            othellier.t = score
-        else:
-            othellier.t += score # tous les othelliers qui ont été choisis pour arriver à l'othellier duquel la partie aléatoire a été lancée ont leur score modifié
+        # actualisation de t pour le noeud joué
+            if othellier_final.gagnant == joueur_principal:  # si ce joueur gagne la partie
+                score = 1
+                if othellier_expansion.t == 10000:  # si le noeud est visité pour la première fois, son score initial est de 10000
+                    othellier_expansion.t = score  # l'othellier duquel le jeu est parti prend 1
+                else:
+                    othellier_expansion.t += score
+            elif othellier_final.gagnant == 2:  # en cas d'égalité
+                score = 0
+                if othellier_expansion.t == 10000:  # si le noeud est visité pour la première fois, son score initial est de 10000
+                    othellier_expansion.t = score  # l'othellier duquel le jeu est parti prend 1
+                else:
+                    othellier_expansion.t += score
+            elif othellier_final.gagnant == -joueur_principal:
+                score = -1
+                if othellier_expansion.t == 10000:
+                    othellier_expansion.t = score
+                else:
+                    othellier_expansion.t += score  # en cas de défaite
 
+        # maintenant on veut faire remonter l'information sur la victoire/défaite après la partie aléatoire grâce à la liste othelliers_choisis
 
-## jeu aléatoire partant d'un othellier prédterminé
+        # del(othelliers_choisis[-1]) # on a déjà actualisé les valeurs de l'othellier sur lequel on a joué
 
-def simulation_MCTS(othellier, prof, joueur):
+            for othellier_i in othelliers_choisis:
+                othellier_i.n += 1
+                if othellier_i.t == 10000:
+                    othellier_i.t = score
+                else:
+                    othellier_i.t += score  # tous les othelliers qui ont été choisis pour arriver à l'othellier duquel la partie aléatoire a été lancée ont leur score modifié
+    else:  # si on est à la fin de l'arbre
+        pass
+
+# jeu aléatoire partant d'un othellier prédeterminé
+
+def simulation_MCTS(othellier, joueur):
     tablier_0 = othellier.tablier
-    othellier_0 = Othellier(prof, joueur, tablier_0)
+    othellier_0 = Othellier(1, joueur, tablier_0)
     liste_othellier_partie = [othellier_0]
 
-    #initialisations
-    i = 0 #compteur de tour
-    joueur = othellier_0.joueur #A qui le tour ? 
+    # initialisations
+    i = 0  # compteur de tour
+    joueur = othellier_0.joueur  # A qui le tour ?
     # Boucle de jeu
-    while liste_othellier_partie[i].gagnant == 0 : #si les deux joueurs passent successivement, c'est qu'on ne peut plus jouer, on arrête
+    # si les deux joueurs passent successivement, c'est qu'on ne peut plus jouer, on arrête
+    while liste_othellier_partie[i].gagnant == 0:
         nbr_successeurs = len(liste_othellier_partie[i].liste_successeurs)
-        successeur_aleatoire = liste_othellier_partie[i].liste_successeurs[randint(0, nbr_successeurs-1)]
-        liste_othellier_partie.append(Othellier(1, -joueur, successeur_aleatoire.tablier, successeur_aleatoire.precedent_passe)) 
-        joueur = -joueur #changement de joueur
+        successeur_aleatoire = liste_othellier_partie[i].liste_successeurs[randint(
+            0, nbr_successeurs-1)]
+        liste_othellier_partie.append(Othellier(
+            1, -joueur, successeur_aleatoire.tablier, successeur_aleatoire.precedent_passe))
+        joueur = -joueur  # changement de joueur
         i += 1
     return(liste_othellier_partie[-1])
 
@@ -1171,6 +1205,7 @@ def comparer_algorithmes(total_simulations,liste_IAtype = ['MinMax','MinMax'], l
 ###########################
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 matrice_resultats = comparer_algorithmes(35,["Hasard","MinMax"],[[5],[5]])
 =======
 matrice_resultats = comparer_algorithmes(200,["MinMax","Hasard"],[[4],[1]])
@@ -1179,6 +1214,13 @@ print(matrice_resultats)
 matrice_resultats = comparer_algorithmes(100,["MinMax","AlphaBeta"],[[5],[5]])
 >>>>>>> e99bc68e0bfaa9e5fc67729c90109d88f3dd1e5c
 print(matrice_resultats)
+=======
+matrice_resultats = comparer_algorithmes(10,["MCTS","Hasard"],liste_MCTS_N = [[15],[15]],liste_MCTS_T = [[10],[10]],liste_MCTS_C = [[1],[1]])
+print(matrice_resultats)
+# np.savetxt("matrice_resultats.csv",matrice_resultats)
+#matrice_resultats = comparer_algorithmes(100,["MinMax","AlphaBeta"],[[5],[5]])
+#print(matrice_resultats)
+>>>>>>> 4ea539c22ef3a5e23ecb4f19c91745dc9871124c
 # np.savetxt("matrice_resultats.csv",matrice_resultats)
 
 
